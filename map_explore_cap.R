@@ -1,5 +1,7 @@
 
 # Library required packages
+
+# for data processing and analysis
 # devtools::install_github("PheWAS/PheWAS")
 library(qqman)
 library(PheWAS)
@@ -7,13 +9,18 @@ library(stringr)
 library(plotly)
 library(purrr)
 
+# for plotting
+library(shiny)
+library(plotly)
+library(shinyjs)
+
 
 # Read in the data
 
 # `dat` contains the MAP probabilities for each individual patient across all diseases
-load("~/Downloads/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
-load("~/Downloads/MAPcutoff.Rdata")       # 1866    2
-load("~/Downloads/pheinfo.rda")           # 1814    5
+load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
+load("data/MAPcutoff.Rdata")       # 1866    2
+load("data/pheinfo.rda")           # 1814    5
 
 phe_man <- colnames(dat)               # 1864, with 2 columns already filtered by Luwan; 
 # the corresponding MAPcutoff for these two phecodes are NAs
@@ -159,7 +166,7 @@ for (i_indi in 1:nrow(dat)){
     
     # custom X axis:
     scale_x_continuous(label = axisdf$group, breaks = axisdf$center) +
-    scale_y_continuous(name = "Map Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
+    scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
     
     # Add highlighted points
     geom_point(data=subset(vis_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
@@ -195,19 +202,14 @@ for (i_indi in 1:nrow(dat)){
 ## Capstone project
 # shiny app
 
-
-library(shiny)
-library(plotly)
-library(shinyjs)
-
 ui <- fluidPage(
-  titlePanel("MAP Explore Visualizations"),
+  titlePanel("MAP Explorer"),
   
   sidebarPanel(
     
     h4("You can explore the MAP data in this Shiny App!"),
     h3("How to use"),
-    p("The default visualization shows the results of Patient 1.
+    p("The default visualization shows the results for Patient 1.
       You can also select any Patient ID from the dropdown list.
       Then it would output a barchart showing the information of the proportion of the phecodes above threshold in each PheWAS group of this individual patient.
       It would also output a Manhattan plot showing the MAP probabilities of each phecodes of this selected patient.
@@ -224,7 +226,7 @@ ui <- fluidPage(
   
   mainPanel(
     useShinyjs(),
-    h3("Map Manhattan Plot"),
+    h3("MAP Manhattan Plot"),
     plotlyOutput("plot"),
     br(),
     h3("Significant Phecodes Table for this Patient"),
