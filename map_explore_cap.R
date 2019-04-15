@@ -243,7 +243,7 @@ server <- function(input, output) {
   
   # renderPlotly() also understands ggplot2 objects!
   output$plot <- renderPlotly({
-    print(input$individual_id)
+    # print(input$individual_id)
     ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
   })
   
