@@ -206,22 +206,20 @@ ui <- fluidPage(
   titlePanel("MAP Explorer"),
   
   sidebarPanel(
-    
-    h4("You can explore the MAP data in this Shiny App!"),
+    h4("You can explore the MAP data in this Shiny App!"),    
+    selectInput(inputId="individual_id",
+                label="Select Patient ID: ",
+                choices=c(1:4), 
+                selected = 1, selectize = F),
+    plotlyOutput("bar"),
+
     h3("How to use"),
     p("The default visualization shows the results for Patient 1.
       You can also select any Patient ID from the dropdown list.
       Then it would output a barchart showing the information of the proportion of the phecodes above threshold in each PheWAS group of this individual patient.
       It would also output a Manhattan plot showing the MAP probabilities of each phecodes of this selected patient.
       You can hover over the points in Manhattan plot or Barchart to get more information.
-      Enjoy playing around with it!"),
-    
-    selectInput(inputId="individual_id",
-                label="Select Patient ID: ",
-                choices=c(1:4), 
-                selected = 1, selectize = F),
-    plotlyOutput("bar")
-    
+      Enjoy playing around with it!")
     ),
   
   mainPanel(
