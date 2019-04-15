@@ -1,12 +1,16 @@
 # Never upload the data directory!
 data/*
 
+# ignore RStudio md previews
+README.html
+
 # ignore Mac specific files
 .DS_Store
 
 # History files
 .Rhistory
 .Rapp.history
+
 
 # Session Data files
 .RData
