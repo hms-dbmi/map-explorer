@@ -1,6 +1,9 @@
 # Never upload the data directory!
 data/*
 
+# ignore Mac specific files
+.DS_Store
+
 # History files
 .Rhistory
 .Rapp.history
