@@ -147,12 +147,17 @@ for (i_indi in 1:nrow(dat)){
     geom_bar(stat="identity",fill = color_vis) + 
     
     ylab ("Proportion of phecodes above threshold") +
-    scale_y_continuous(expand = c(0, 0)) +
+    scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+    scale_x_discrete(name = "",labels=ratio_df$group) +
     
+    theme_bw() + 
     theme(
+      legend.position="none",
+      panel.border = element_blank(),
+      panel.grid.major.x = element_blank(),
+      panel.grid.minor.x = element_blank(),
       axis.title.y = element_text(size=8),
-      axis.title.x = element_text(size=8),
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 6)) 
+      axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5)) 
   
   assign(str_glue("ratio_id{i_indi}"),ratio_p) 
   
@@ -227,14 +232,13 @@ ui <- fluidPage(
     h3("MAP Manhattan Plot"),
     plotlyOutput("plot"),
     br(),
-    h3("Significant Phecodes Table for this Patient"),
+    textOutput("sig_tab"),
     textOutput("cond_num"),
     br(),
     DT::dataTableOutput("panel") ,
     
-    tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")
-              
-    )
+    tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+    tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}"))          
     
   )) # ")" for mainPanel & fluidPage
 
@@ -250,6 +254,10 @@ server <- function(input, output) {
   output$bar <- renderPlotly({
     ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
     
+  })
+  
+  output$sig_tab <- renderText({
+    paste("Significant Phecodes Table for Patient",input$individual_id)
   })
   
   # output the total number of phecodes that are above their corresponding threshold
