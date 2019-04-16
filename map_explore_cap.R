@@ -11,7 +11,7 @@ library(purrr)
 
 # for plotting
 library(shiny)
-library(plotly)
+#library(plotly)
 library(shinyjs)
 
 
