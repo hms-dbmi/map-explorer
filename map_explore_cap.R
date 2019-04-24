@@ -287,10 +287,11 @@ server <- function(input, output) {
     sub_df <- subset(vis_df_all[x_sub:y_sub, ], is_highlight=="yes")
     
     sub_df <- data.frame(Phecodes = sub_df$phecode, 
-               Group = sub_df$group,
-               Phenotype = sub_df$pheno,
-               MAP_prob = sub_df$map_prob %>% round(4),
-               MAP_cutoff = sub_df$cutoff %>% round(4))
+                         Group = sub_df$group,
+                         cl = sub_df$groupnum,
+                         Phenotype = sub_df$pheno,
+                         MAP_prob = sub_df$map_prob %>% round(4),
+                         MAP_cutoff = sub_df$cutoff %>% round(4))
     datatable(sub_df) %>%
         formatStyle('cl',
                      backgroundColor = styleEqual(c(1:15,17:18), color_vis)
