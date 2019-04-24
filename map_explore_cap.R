@@ -14,7 +14,7 @@ library(shiny)
 #library(plotly)
 library(shinyjs)
 library(DT)
-options(DT.options = list(pageLength = 6))  # each time shows only 6 rows in the output table
+
 
 
 # Read in the data
@@ -292,7 +292,7 @@ server <- function(input, output) {
                          Phenotype = sub_df$pheno,
                          MAP_prob = sub_df$map_prob %>% round(4),
                          MAP_cutoff = sub_df$cutoff %>% round(4))
-    datatable(sub_df) %>%
+    datatable(sub_df,options = list(pageLength =5)) %>%    # each time shows only 5 rows in the output table
         formatStyle('cl',
                      backgroundColor = styleEqual(c(1:15,17:18), color_vis)
                )
