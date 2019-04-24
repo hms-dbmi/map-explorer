@@ -13,6 +13,8 @@ library(purrr)
 library(shiny)
 #library(plotly)
 library(shinyjs)
+library(DT)
+options(DT.options = list(pageLength = 6))  # each time shows only 6 rows in the output table
 
 
 # Read in the data
@@ -107,9 +109,14 @@ for (i_indi in 1:nrow(dat)){
   
   ######################
   # Actual visualization
-  color_vis <- c("blue","darkcyan","brown","darkorange1","magenta","darkblue",
-                 "darkseagreen4","red","coral4","chartreuse4","black","royalblue4",
-                 "firebrick","darkolivegreen","mediumspringgreen","purple","gray50")
+  color_vis <- c("blue","darkcyan","brown","darkorange","magenta","darkblue",
+                 "darkseagreen","red","coral","chartreuse","black","royalblue",
+                 "firebrick","darkolivegreen","mediumspringgreen","purple","gray")
+  
+  # original color used in the MAP manuscript
+  # color_vis <- c("blue","darkcyan","brown","darkorange1","magenta","darkblue",
+  #                "darkseagreen4","red","coral4","chartreuse4","black","royalblue4",
+  #                "firebrick","darkolivegreen","mediumspringgreen","purple","gray50")
   
   vis_df <- binom %>% 
     arrange(groupnum) %>% 
@@ -271,7 +278,7 @@ server <- function(input, output) {
           subset(vis_df_all[x_sub:y_sub, ], is_highlight=="yes") %>% nrow,".")
   })
   
-  # Show the result                       
+  # Show the result in the table                        
   output$panel <- DT::renderDataTable({
     
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
@@ -279,11 +286,17 @@ server <- function(input, output) {
     y_sub <- nrow(vis_df)*mat  
     sub_df <- subset(vis_df_all[x_sub:y_sub, ], is_highlight=="yes")
     
-    data.frame(Phecodes = sub_df$phecode, 
+    sub_df <- data.frame(Phecodes = sub_df$phecode, 
                Group = sub_df$group,
                Phenotype = sub_df$pheno,
                MAP_prob = sub_df$map_prob %>% round(4),
-               MAP_cutoff = sub_df$cutoff %>% round(4))})
+               MAP_cutoff = sub_df$cutoff %>% round(4))
+    datatable(sub_df) %>%
+        formatStyle('cl',
+                     backgroundColor = styleEqual(c(1:15,17:18), color_vis)
+               )
+  
+  })
   
 }
 
