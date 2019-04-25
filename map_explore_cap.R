@@ -109,14 +109,18 @@ for (i_indi in 1:nrow(dat)){
   
   ######################
   # Actual visualization
-  color_vis <- c("blue","darkcyan","brown","darkorange","magenta","darkblue",
-                 "darkseagreen","red","coral","chartreuse","black","royalblue",
-                 "firebrick","darkolivegreen","mediumspringgreen","purple","gray")
-  
   # original color used in the MAP manuscript
-  # color_vis <- c("blue","darkcyan","brown","darkorange1","magenta","darkblue",
-  #                "darkseagreen4","red","coral4","chartreuse4","black","royalblue4",
-  #                "firebrick","darkolivegreen","mediumspringgreen","purple","gray50")
+  color_vis <- c("blue","darkcyan","brown","darkorange1","magenta","darkblue",
+                 "darkseagreen4","red","coral4","chartreuse4","black","royalblue4",
+                 "firebrick","darkolivegreen","mediumspringgreen","purple","gray50")
+
+  # convert color to rgb format, for use in DT table
+  colvis_rgb <- c()
+  for (ele in color_vis){
+    tmp <- col2rgb(ele)
+    colvis_rgb <- c(colvis_rgb,str_glue("rgb({tmp[1]},{tmp[2]},{tmp[3]})"))
+  }
+  
   
   vis_df <- binom %>% 
     arrange(groupnum) %>% 
@@ -294,7 +298,7 @@ server <- function(input, output) {
                          MAP_cutoff = sub_df$cutoff %>% round(4))
     datatable(sub_df,options = list(pageLength =5)) %>%    # each time shows only 5 rows in the output table
         formatStyle('cl',
-                     backgroundColor = styleEqual(c(1:15,17:18), color_vis)
+                     backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb)
                )
   
   })
