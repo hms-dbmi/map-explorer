@@ -20,6 +20,7 @@ library(DT)
 # Read in the data
 
 # `dat` contains the MAP probabilities for each individual patient across all diseases
+# setwd("~/Desktop/capstone")
 load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
 load("data/MAPcutoff.Rdata")       # 1866    2
 load("data/pheinfo.rda")           # 1814    5
@@ -157,7 +158,8 @@ for (i_indi in 1:nrow(dat)){
   ratio_p <- ggplot(ratio_df, aes(x=group, y=Proportion_abv_thrh, text = description)) + 
     geom_bar(stat="identity",fill = color_vis) + 
     
-    ylab ("Proportion of phecodes above threshold") +
+    ggtitle ("Proportion of phecodes above threshold", ) +
+    ylab("Proportion") +
     scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
     scale_x_discrete(name = "",labels=ratio_df$group) +
     
@@ -167,8 +169,9 @@ for (i_indi in 1:nrow(dat)){
       panel.border = element_blank(),
       panel.grid.major.x = element_blank(),
       panel.grid.minor.x = element_blank(),
-      axis.title.y = element_text(size=8),
-      axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5)) 
+      axis.title.y = element_text(family = "sans",size=8),
+      axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
+      plot.title = element_text(family = "sans",size = 10)) 
   
   assign(str_glue("ratio_id{i_indi}"),ratio_p) 
   
