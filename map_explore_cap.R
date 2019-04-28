@@ -158,7 +158,7 @@ for (i_indi in 1:nrow(dat)){
   ratio_p <- ggplot(ratio_df, aes(x=group, y=Proportion_abv_thrh, text = description)) + 
     geom_bar(stat="identity",fill = color_vis) + 
     
-    ggtitle ("Proportion of phecodes above threshold", ) +
+    ggtitle ("Proportion of phecodes above threshold") +
     ylab("Proportion") +
     scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
     scale_x_discrete(name = "",labels=ratio_df$group) +
