@@ -150,9 +150,14 @@ for (i_indi in 1:nrow(dat)){
   }
   colnames(ratio_df)[2] <- "Proportion_abv_thrh"
   
+  tmp <- c()
+  for (ele in ratio_df$Proportion_abv_thrh){
+    tmp <- c(tmp,percent(ele))
+  }
+  
   ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
                                  "\nProportion above threshold: ",
-                                 ratio_df$Proportion_abv_thrh %>% round(6), sep="")
+                                 tmp, sep="")
   
   # Plot the barchart
   ratio_p <- ggplot(ratio_df, aes(x=group, y=Proportion_abv_thrh, text = description)) + 
