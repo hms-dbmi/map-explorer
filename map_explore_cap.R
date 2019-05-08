@@ -160,58 +160,58 @@ for (i_indi in 1:nrow(dat)){
                                  "\nProportion above threshold: ",
                                  tmp, sep="")
   
-  # Plot the barchart
-  x = factor(ratio_df$group)   
-  x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
+#   # Plot the barchart  - plot it in Shiny
+#   x = factor(ratio_df$group)   
+#   x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
   
-  ratio_p <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
-    geom_bar(stat="identity",fill = color_vis) + 
+#   ratio_p <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
+#     geom_bar(stat="identity",fill = color_vis) + 
     
-    ggtitle ("Proportion of phecodes above threshold") +
-    ylab("Proportion") +
-    scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
-    scale_x_discrete(name = "",labels=ratio_df$group) +
+#     ggtitle ("Proportion of phecodes above threshold") +
+#     ylab("Proportion") +
+#     scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+#     scale_x_discrete(name = "",labels=ratio_df$group) +
     
-    theme_bw() + 
-    theme(
-      legend.position="none",
-      panel.border = element_blank(),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
-      axis.title.y = element_text(family = "sans",size=8),
-      axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
-      plot.title = element_text(family = "sans",size = 10)) 
+#     theme_bw() + 
+#     theme(
+#       legend.position="none",
+#       panel.border = element_blank(),
+#       panel.grid.major.x = element_blank(),
+#       panel.grid.minor.x = element_blank(),
+#       axis.title.y = element_text(family = "sans",size=8),
+#       axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
+#       plot.title = element_text(family = "sans",size = 10)) 
   
-  assign(str_glue("ratio_id{i_indi}"),ratio_p) 
+#   assign(str_glue("ratio_id{i_indi}"),ratio_p) 
   
   axisdf <- vis_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
   
-  ## make the manhattan plot
-  p <- ggplot(vis_df, aes(x = phenotypes, y = map_prob,text = description)) +
+#   ## make the manhattan plot  - make it in Shiny
+#   p <- ggplot(vis_df, aes(x = phenotypes, y = map_prob,text = description)) +
     
-    # Show all points
-    geom_point( aes(color=as.factor(groupnum)), alpha=0.25, size=1.2) +
+#     # Show all points
+#     geom_point( aes(color=as.factor(groupnum)), alpha=0.25, size=1.2) +
     
-    # custom X axis:
-    scale_x_continuous(label = axisdf$group, breaks = axisdf$center) +
-    scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
+#     # custom X axis:
+#     scale_x_continuous(label = axisdf$group, breaks = axisdf$center) +
+#     scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
     
-    # Add highlighted points
-    geom_point(data=subset(vis_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
+#     # Add highlighted points
+#     geom_point(data=subset(vis_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
     
-    scale_color_manual(values = color_vis) +
+#     scale_color_manual(values = color_vis) +
     
-    # Custom the theme:
-    theme_bw() +
-    theme( 
-      legend.position="none",
-      panel.border = element_blank(),
-      panel.grid.major.x = element_blank(),
-      panel.grid.minor.x = element_blank(),
-      axis.text.x = element_text(angle = 45, hjust = 1)
-    )
+#     # Custom the theme:
+#     theme_bw() +
+#     theme( 
+#       legend.position="none",
+#       panel.border = element_blank(),
+#       panel.grid.major.x = element_blank(),
+#       panel.grid.minor.x = element_blank(),
+#       axis.text.x = element_text(angle = 45, hjust = 1)
+#     )
   
-  assign(str_glue("p{i_indi}"),p) 
+#   assign(str_glue("p{i_indi}"),p) 
   
   # ggplotly() function returns a plotly object
   # ggplotly(p, tooltip="text")
@@ -269,13 +269,71 @@ ui <- fluidPage(
 server <- function(input, output) {
   
   # renderPlotly() also understands ggplot2 objects!
+  
+  ####################
+  # the Manhattan plot
   output$plot <- renderPlotly({
-    # print(input$individual_id)
-    ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
+    
+    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    sub_df <- vis_df_all[min_sub:max_sub, ]
+    
+    tmp <- ggplot(sub_df, aes(x = phenotypes, y = map_prob,text = description)) +
+      
+      # Show all points
+      geom_point( aes(color=as.factor(groupnum)), alpha=0.25, size=1.2) +
+      
+      # custom X axis:
+      scale_x_continuous(label = axisdf$group, breaks = axisdf$center) +
+      scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
+      
+      # Add highlighted points
+      geom_point(data=subset(sub_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
+      
+      scale_color_manual(values = color_vis) +
+      
+      # Custom the theme:
+      theme_bw() +
+      theme( 
+        legend.position="none",
+        panel.border = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.text.x = element_text(angle = 45, hjust = 1)
+      )
+    
+    # make the plot interactive  
+    ggplotly(tmp, tooltip="text")
+    # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
   })
   
+  ###############
+  # the bar chart
+  x = factor(ratio_df$group)   
+  x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
+  
   output$bar <- renderPlotly({
-    ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
+    tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
+      geom_bar(stat="identity",fill = color_vis) + 
+      
+      ggtitle ("Proportion of phecodes above threshold") +
+      ylab("Proportion") +
+      scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+      scale_x_discrete(name = "", labels=ratio_df$group) +
+      
+      theme_bw() + 
+      theme(
+        legend.position="none",
+        panel.border = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.title.y = element_text(family = "sans",size=8),
+        axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
+        plot.title = element_text(family = "sans",size = 10)) 
+    
+    ggplotly(tmp,tooltip="text")
+    # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
     
   })
   
@@ -287,20 +345,20 @@ server <- function(input, output) {
   output$cond_num <- renderText({
     
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
-    x_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
-    y_sub <- nrow(vis_df)*mat        
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat        
     
     paste("The total number of phecodes that are above their corresponding threshold is",
-          subset(vis_df_all[x_sub:y_sub, ], is_highlight=="yes") %>% nrow,".")
+          subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
   
   # Show the result in the table                        
   output$panel <- DT::renderDataTable({
     
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
-    x_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
-    y_sub <- nrow(vis_df)*mat  
-    sub_df <- subset(vis_df_all[x_sub:y_sub, ], is_highlight=="yes")
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
     
     sub_df <- data.frame(Phecodes = sub_df$phecode, 
                          Group = sub_df$group,
@@ -309,10 +367,10 @@ server <- function(input, output) {
                          MAP_prob = sub_df$map_prob %>% round(4),
                          MAP_cutoff = sub_df$cutoff %>% round(4))
     datatable(sub_df,options = list(pageLength =5)) %>%    # each time shows only 5 rows in the output table
-        formatStyle('cl',
-                     backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb)
-               )
-  
+      formatStyle('cl',
+                  backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb)
+      )
+    
   })
   
 }
