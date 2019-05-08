@@ -8,6 +8,7 @@ library(PheWAS)
 library(stringr)
 library(plotly)
 library(purrr)
+library(scales)
 
 # for plotting
 library(shiny)
