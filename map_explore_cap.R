@@ -161,7 +161,10 @@ for (i_indi in 1:nrow(dat)){
                                  tmp, sep="")
   
   # Plot the barchart
-  ratio_p <- ggplot(ratio_df, aes(x=group, y=Proportion_abv_thrh, text = description)) + 
+  x = factor(ratio_df$group)   
+  x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
+  
+  ratio_p <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
     geom_bar(stat="identity",fill = color_vis) + 
     
     ggtitle ("Proportion of phecodes above threshold") +
