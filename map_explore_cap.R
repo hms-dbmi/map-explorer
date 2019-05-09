@@ -230,6 +230,11 @@ for (i_indi in 1:nrow(dat)){
 ## Capstone project
 # shiny app
 
+
+library(shiny)
+library(plotly)
+library(shinyjs)
+
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
   
@@ -240,7 +245,7 @@ ui <- fluidPage(
                 choices=c(1:4), 
                 selected = 1, selectize = F),
     plotlyOutput("bar"),
-
+    
     h3("How to use"),
     p("The default visualization shows the results for Patient 1.
       You can also select any Patient ID from the dropdown list.
@@ -256,12 +261,14 @@ ui <- fluidPage(
     plotlyOutput("plot"),
     br(),
     textOutput("sig_tab"),
-    textOutput("cond_num"),
     br(),
-    DT::dataTableOutput("panel") ,
-    
+    textOutput("cond_num"),     #report number of phecodes above threshold
+    textOutput("brush"),        #report number of phecodes both above threshold and selected
+    br(),
+    DT::DTOutput("panel") ,
     tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-    tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}"))          
+    tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+    tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")) 
     
   )) # ")" for mainPanel & fluidPage
 
@@ -302,7 +309,7 @@ server <- function(input, output) {
         panel.grid.minor.x = element_blank(),
         axis.text.x = element_text(angle = 45, hjust = 1)
       )
-    
+  
     # make the plot interactive  
     ggplotly(tmp, tooltip="text")
     # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
@@ -352,13 +359,25 @@ server <- function(input, output) {
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
   
-  # Show the result in the table                        
-  output$panel <- DT::renderDataTable({
+
+
+  # Show the result in the DT table                        
+  output$panel <- DT::renderDT({
+    
+    lasso <- event_data("plotly_relayout")
     
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
     sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
+    
+    if (!is.null(lasso)) {
+      x.min <- lasso[1]; x.max <- lasso[2]
+      y.min <- lasso[3]; y.max <- lasso[4]
+
+      sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
+                                   map_prob >= y.min & map_prob <= y.max)
+    }
     
     sub_df <- data.frame(Phecodes = sub_df$phecode, 
                          Group = sub_df$group,
@@ -366,12 +385,36 @@ server <- function(input, output) {
                          Phenotype = sub_df$pheno,
                          MAP_prob = sub_df$map_prob %>% round(4),
                          MAP_cutoff = sub_df$cutoff %>% round(4))
+    
     datatable(sub_df,options = list(pageLength =5)) %>%    # each time shows only 5 rows in the output table
-      formatStyle('cl',
-                  backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb)
-      )
+              formatStyle('cl',
+              backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
+  
     
   })
+  
+  output$brush <- renderText({
+    lasso <- event_data("plotly_relayout")
+    
+    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")  # create a subset for each individual patient
+    
+    if (!is.null(lasso)) {
+      x.min <- lasso[1]; x.max <- lasso[2]
+      y.min <- lasso[3]; y.max <- lasso[4]
+      
+      sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
+                                  map_prob >= y.min & map_prob <= y.max)
+    }
+    
+    num_count <- nrow(sub_df) %>% as.numeric
+    
+    paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
+    
+  })
+  
   
 }
 
