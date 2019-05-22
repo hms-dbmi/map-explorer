@@ -257,18 +257,34 @@ ui <- fluidPage(
   
   mainPanel(
     useShinyjs(),
-    h3("MAP Manhattan Plot"),
-    plotlyOutput("plot"),
-    br(),
-    textOutput("sig_tab"),
-    br(),
-    textOutput("cond_num"),     #report number of phecodes above threshold
-    textOutput("brush"),        #report number of phecodes both above threshold and selected
-    br(),
-    DT::DTOutput("panel") ,
-    tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-    tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-    tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")) 
+    tabsetPanel(
+      tabPanel("Main",
+               h3("MAP Manhattan Plot"),
+               fluidRow(
+                 plotlyOutput("plot"),
+                 br(),
+                 textOutput("sig_tab"),
+                 br(),
+                 textOutput("cond_num"),     #report number of phecodes above threshold
+                 textOutput("brush"),        #report number of phecodes both above threshold and selected
+                 br(),
+                 DT::DTOutput("panel") ,
+                 tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+                 tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+                 tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
+      ),
+      
+      tabPanel("MS",
+               h3("MS Data Overview"),
+               plotlyOutput("ms_bar"),
+               sliderInput(
+                 "stdat", "Start date:",
+                 min=min(three_ms$StartDate),
+                 max=max(three_ms$StartDate),
+                 value=c(min(three_ms$StartDate), max(three_ms$StartDate))
+               ))
+      
+    )
     
   )) # ")" for mainPanel & fluidPage
 
@@ -309,7 +325,7 @@ server <- function(input, output) {
         panel.grid.minor.x = element_blank(),
         axis.text.x = element_text(angle = 45, hjust = 1)
       )
-  
+    
     # make the plot interactive  
     ggplotly(tmp, tooltip="text")
     # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
@@ -359,8 +375,8 @@ server <- function(input, output) {
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
   
-
-
+  
+  
   # Show the result in the DT table                        
   output$panel <- DT::renderDT({
     
@@ -371,12 +387,13 @@ server <- function(input, output) {
     max_sub <- nrow(vis_df)*mat  
     sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
     
-    if (!is.null(lasso)) {
+    if (!is.null(lasso) & length(lasso)==4) {
       x.min <- lasso[1]; x.max <- lasso[2]
       y.min <- lasso[3]; y.max <- lasso[4]
-
+      print(length(lasso))
+      
       sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
-                                   map_prob >= y.min & map_prob <= y.max)
+                                    map_prob >= y.min & map_prob <= y.max)
     }
     
     sub_df <- data.frame(Phecodes = sub_df$phecode, 
@@ -387,9 +404,9 @@ server <- function(input, output) {
                          MAP_cutoff = sub_df$cutoff %>% round(4))
     
     datatable(sub_df,options = list(pageLength =5)) %>%    # each time shows only 5 rows in the output table
-              formatStyle('cl',
-              backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
-  
+      formatStyle('cl',
+                  backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
+    
     
   })
   
@@ -401,18 +418,41 @@ server <- function(input, output) {
     max_sub <- nrow(vis_df)*mat  
     sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")  # create a subset for each individual patient
     
-    if (!is.null(lasso)) {
+    if (!is.null(lasso) & length(lasso)==4) {
       x.min <- lasso[1]; x.max <- lasso[2]
       y.min <- lasso[3]; y.max <- lasso[4]
       
       sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
-                                  map_prob >= y.min & map_prob <= y.max)
+                                    map_prob >= y.min & map_prob <= y.max)
     }
     
     num_count <- nrow(sub_df) %>% as.numeric
     
     paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
     
+  })
+  
+  
+  # the second tabset
+  output$ms_bar <- renderPlotly({
+    mat <- match(input$individual_id,1:nrow(dat))
+    if(mat == '1') {
+      
+    }
+    p1 <- ggplot(three_ms[pat_encounter_1,], 
+                 aes(x=StartDate, y= encounter, fill=Category,text = description)) + 
+      geom_bar(stat="identity", position = "stack") +
+      
+      scale_x_date(date_breaks = "3 months") + 
+      
+      # Custom the theme:
+      theme_bw() +
+      theme(legend.position="none",
+            panel.border = element_blank(),
+            panel.grid.major.x = element_blank(),
+            panel.grid.minor.x = element_blank())
+    
+    ggplotly(p1,tooltip="text")
   })
   
   
