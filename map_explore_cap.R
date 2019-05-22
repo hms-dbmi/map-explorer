@@ -390,7 +390,6 @@ server <- function(input, output) {
     if (!is.null(lasso) & length(lasso)==4) {
       x.min <- lasso[1]; x.max <- lasso[2]
       y.min <- lasso[3]; y.max <- lasso[4]
-      print(length(lasso))
       
       sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
                                     map_prob >= y.min & map_prob <= y.max)
