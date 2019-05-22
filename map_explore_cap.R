@@ -12,9 +12,10 @@ library(scales)
 
 # for plotting
 library(shiny)
-#library(plotly)
 library(shinyjs)
 library(DT)
+library(reshape2)
+library(crosstalk)
 
 
 
