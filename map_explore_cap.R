@@ -290,7 +290,7 @@ server <- function(input, output, session) {
   dat_month <- reactiveVal()
   dat_daily <- reactiveVal()
   
-  # when clicking on a bar chart, zoom into the next subcategory 
+  # when clicking on a bar chart, zoom into the next subcategory (year->month, month->day)
   observeEvent(event_data("plotly_click", source = "dat_year"), {
     dat_year(event_data("plotly_click", source = "dat_year")$x)
     dat_month(NULL)
@@ -302,17 +302,32 @@ server <- function(input, output, session) {
     dat_daily(NULL)
   })
   
+  
+  # observeEvent(event_data("plotly_doubleclick", source = "dat_year",
+  #                         session = shiny::getDefaultReactiveDomain()), {
+  #   dat_year(NULL)
+  #   dat_month(NULL)
+  #   dat_daily(NULL)
+  # })
 
+  ####note: try to highlight only the clicked/selected bar; why with 'if' statement, it works.
+  # there are some issue in 'if' statement, if keep clicked on the barchart on the same year, there would be mistakes
   output$dat_year <- renderPlotly({
     sd1 <- SharedData$new(three_mss[pat_encounter_1,])
+    print(dat_year())
+  
     pc <- sd1 %>%
-              plot_ly(source = "dat_year", 
+              plot_ly(source = "dat_year", name =~Category, # name of the legend
                       text=~Description, hoverinfo="text") %>% 
-              suppressWarnings %>%
-              add_bars(x = ~Year, y = ~Encounter, color=~Category) %>%
+              add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
               layout(barmode='stack', title = "Encounters Aggregated by Year",
-                     yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Year', rangeslider=list(type="date"), visible=TRUE))
-    pc
+                     yaxis=list(title='Encounters', visible=T), 
+                     xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+    if (is.null(dat_year())) {
+      pic_year <<- pc
+      return(pic_year)
+    }
+    pc 
     # bscols(
     #   widths=c(3,NA),
     #   list(
@@ -329,12 +344,17 @@ server <- function(input, output, session) {
     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
     sd2 <- SharedData$new(sd)
     pc <- sd2 %>%
-      plot_ly(source = "dat_month", 
+      plot_ly(source = "dat_month", name =~Category,
               text=~Description, hoverinfo="text") %>% 
       suppressWarnings %>%
-      add_bars(x = ~Month, y = ~Encounter, color=~Category) %>%
+      add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
       layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
+    
+    if (is.null(dat_month())) {
+      pic_month <<- pc
+      return(pic_month)
+    }
     pc
     # bscols(
     #   widths=c(3,NA),
@@ -352,12 +372,17 @@ server <- function(input, output, session) {
     mmonth <- sd$Month[1] %>% substr(1, 7)
     sd3 <- SharedData$new(sd)
     pc <- sd3 %>%
-      plot_ly(source = "dat_daily",
+      plot_ly(source = "dat_daily", name =~Category,
               text=~Description, hoverinfo="text") %>% 
       suppressWarnings %>% 
-      add_bars(x = ~StartDate, y = ~Encounter, color=~Category) %>%
+      add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
       layout(barmode='stack', title = paste0("Encounters Aggregated by Day (Month ", mmonth,")"),
              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Day', rangeslider=list(type="date"), visible=TRUE))
+    
+    if (is.null(dat_daily())) {
+      pic_daily <<- pc
+      return(pic_daily)
+    }
     pc
     # bscols(
     #   widths=c(3,NA),
@@ -368,6 +393,7 @@ server <- function(input, output, session) {
   })
   
 
+  # For MAP tabset
   ####################
   # the Manhattan plot
   output$plot <- renderPlotly({
