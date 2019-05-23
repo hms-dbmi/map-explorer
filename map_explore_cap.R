@@ -231,11 +231,6 @@ for (i_indi in 1:nrow(dat)){
 ## Capstone project
 # shiny app
 
-
-library(shiny)
-library(plotly)
-library(shinyjs)
-
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
   
@@ -277,23 +272,102 @@ ui <- fluidPage(
       
       tabPanel("MS",
                h3("MS Data Overview"),
-               plotlyOutput("ms_bar"),
-               sliderInput(
-                 "stdat", "Start date:",
-                 min=min(three_ms$StartDate),
-                 max=max(three_ms$StartDate),
-                 value=c(min(three_ms$StartDate), max(three_ms$StartDate))
-               ))
-      
-    )
+               plotlyOutput("dat_year", height = 300),
+               br(),
+               plotlyOutput("dat_month", height = 300),
+               br(),
+               plotlyOutput("dat_daily", height = 300))
+               )
     
   )) # ")" for mainPanel & fluidPage
 
 
-server <- function(input, output) {
+server <- function(input, output, session) {
   
-  # renderPlotly() also understands ggplot2 objects!
+  # For MS tabset
+  # for maintaining the state of drill-down variables
+  dat_year <- reactiveVal()
+  dat_month <- reactiveVal()
+  dat_daily <- reactiveVal()
   
+  # when clicking on a bar chart, zoom into the next subcategory 
+  observeEvent(event_data("plotly_click", source = "dat_year"), {
+    dat_year(event_data("plotly_click", source = "dat_year")$x)
+    dat_month(NULL)
+    dat_daily(NULL)
+  })
+  
+  observeEvent(event_data("plotly_click", source = "dat_month"), {
+    dat_month(event_data("plotly_click", source = "dat_month")$x)
+    dat_daily(NULL)
+  })
+  
+
+  output$dat_year <- renderPlotly({
+    sd1 <- SharedData$new(three_mss[pat_encounter_1,])
+    pc <- sd1 %>%
+              plot_ly(source = "dat_year", 
+                      text=~Description, hoverinfo="text") %>% 
+              suppressWarnings %>%
+              add_bars(x = ~Year, y = ~Encounter, color=~Category) %>%
+              layout(barmode='stack', title = "Encounters Aggregated by Year",
+                     yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Year', rangeslider=list(type="date"), visible=TRUE))
+    pc
+    # bscols(
+    #   widths=c(3,NA),
+    #   list(
+    #     filter_checkbox('category', 'Category', sd1, ~Category, inline=F)
+    #   ),
+    #   pc)
+  })
+  
+  output$dat_month <- renderPlotly({
+    if (is.null(dat_year())) return(NULL)
+    
+    sd <- three_mss[pat_encounter_1,] %>% 
+             filter(Year == dat_year())
+    yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
+    sd2 <- SharedData$new(sd)
+    pc <- sd2 %>%
+      plot_ly(source = "dat_month", 
+              text=~Description, hoverinfo="text") %>% 
+      suppressWarnings %>%
+      add_bars(x = ~Month, y = ~Encounter, color=~Category) %>%
+      layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
+             yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
+    pc
+    # bscols(
+    #   widths=c(3,NA),
+    #   list(
+    #     filter_checkbox('category', 'Category', sd2, ~Category, inline=F)
+    #   ),
+    #   pc)
+  })
+
+  output$dat_daily <- renderPlotly({
+    if (is.null(dat_month())) return(NULL)
+    
+    sd <- three_mss[pat_encounter_1,] %>% 
+      filter(Month == dat_month())
+    mmonth <- sd$Month[1] %>% substr(1, 7)
+    sd3 <- SharedData$new(sd)
+    pc <- sd3 %>%
+      plot_ly(source = "dat_daily",
+              text=~Description, hoverinfo="text") %>% 
+      suppressWarnings %>% 
+      add_bars(x = ~StartDate, y = ~Encounter, color=~Category) %>%
+      layout(barmode='stack', title = paste0("Encounters Aggregated by Day (Month ", mmonth,")"),
+             yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Day', rangeslider=list(type="date"), visible=TRUE))
+    pc
+    # bscols(
+    #   widths=c(3,NA),
+    #   list(
+    #     filter_checkbox('category', 'Category', sd3, ~Category, inline=F)
+    #   ),
+    #   pc)
+  })
+  
+
   ####################
   # the Manhattan plot
   output$plot <- renderPlotly({
@@ -430,29 +504,6 @@ server <- function(input, output) {
     
     paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
     
-  })
-  
-  
-  # the second tabset
-  output$ms_bar <- renderPlotly({
-    mat <- match(input$individual_id,1:nrow(dat))
-    if(mat == '1') {
-      
-    }
-    p1 <- ggplot(three_ms[pat_encounter_1,], 
-                 aes(x=StartDate, y= encounter, fill=Category,text = description)) + 
-      geom_bar(stat="identity", position = "stack") +
-      
-      scale_x_date(date_breaks = "3 months") + 
-      
-      # Custom the theme:
-      theme_bw() +
-      theme(legend.position="none",
-            panel.border = element_blank(),
-            panel.grid.major.x = element_blank(),
-            panel.grid.minor.x = element_blank())
-    
-    ggplotly(p1,tooltip="text")
   })
   
   
