@@ -225,11 +225,65 @@ for (i_indi in 1:nrow(dat)){
   
 }
 
+#############
+# for MS data 
+# read in the MS patient files
+three_ms <- read_csv("data/3_MS_patients.csv")  #,sep=",", header = T, stringsAsFactors = F)
+
+# reformat the file
+three_ms <- three_ms %>% mutate(Encounter = 1)    # easier to plot
+three_ms$StartDate <- as.Date(three_ms$StartDate, "%m/%d/%Y")
+
+# # peek at the data
+# unique(three_ms$PatientNum)
+# # [1]  68286  99492 106579
+# unique(three_ms$PatientID)
+# # [1] BWH-487265 BWH-479730 BWH-513823
+# # Levels: BWH-479730 BWH-487265 BWH-513823
+# unique(three_ms$Category)
+# # [1] MS ICD        MS CUI        Brain MRI CUI Relapse CUI   Brain MRI CPT Vitamin D CUI
+# # Levels: Brain MRI CPT Brain MRI CUI MS CUI MS ICD Relapse CUI Vitamin D CUI
+# 
+# # Just 3 patients - pick 2 w lots of encounters, and 1 w fewer. Merge all brain mri. 
+# three_ms %>% filter(PatientNum == "68286") %>% dim
+# # [1] 270   5 (6)
+# three_ms %>% filter(PatientNum == "99492") %>% dim
+# # [1] 178   5 (6)
+# three_ms %>% filter(PatientNum == "106579") %>% dim
+# # [1] 71  5 (6)
+
+# read in the Vitamin D file
+three_ms_vd <- read_csv("data/3_MS_patients_VD.csv")   # 48 5
+three_ms_vd$StartDate <- as.Date(three_ms_vd$StartDate, "%m/%d/%Y")
+
+# read in the CUIs lists
+ms_CUI <- read_csv("data/MS_CUI_ICD_list.csv")
+
+# merge the original data file and CUIs together
+three_mss <- inner_join(three_ms,ms_CUI,by=c("ConceptCd", "Category"))
+
+three_mss$Description <- paste0("Start Date: ",three_mss$StartDate, 
+                                "\nPatient Number: ",three_mss$PatientNum,
+                                "\nCategory: ",three_mss$Category,
+                                "\nDescription: ",three_mss$Description)
+
+# aggregate the encounters by month
+three_mss <- three_mss %>% group_by(Month=floor_date(StartDate, "month"))
+three_mss <- three_mss %>% group_by(Year=floor_date(StartDate, "year"))
+
+
+three_mss$color <- factor(three_mss$Category, labels = RColorBrewer::brewer.pal(length(unique(three_mss$Category)), name = "Set2"))
+
+pat_encounter_1 <- which(three_mss$PatientNum == "68286")
+pat_encounter_2 <- which(three_mss$PatientNum == "99492")
+pat_encounter_3 <- which(three_mss$PatientNum == "106579")
+pat_encounter <- c(pat_encounter_1, pat_encounter_2, pat_encounter_3)
 
 
 ###########
 ## Capstone project
 # shiny app
+
 
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
@@ -277,7 +331,7 @@ ui <- fluidPage(
                plotlyOutput("dat_month", height = 300),
                br(),
                plotlyOutput("dat_daily", height = 300))
-               )
+    )
     
   )) # ")" for mainPanel & fluidPage
 
@@ -309,24 +363,36 @@ server <- function(input, output, session) {
   #   dat_month(NULL)
   #   dat_daily(NULL)
   # })
-
+  
   ####note: try to highlight only the clicked/selected bar; why with 'if' statement, it works.
   # there are some issue in 'if' statement, if keep clicked on the barchart on the same year, there would be mistakes
   output$dat_year <- renderPlotly({
+    #geom_point(data=subset(sub_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
+    
+    # if(!is.null(dat_year())) {
+    #   select_df <- three_mss[pat_encounter_1,] %>% filter(Year == dat_year())
+    #   select_df <- SharedData$new(select_df)
+    # } else{
+    #   sd1 <- SharedData$new(three_mss[pat_encounter_1,])
+    # }
+    
     sd1 <- SharedData$new(three_mss[pat_encounter_1,])
-    print(dat_year())
-  
+    
     pc <- sd1 %>%
-              plot_ly(source = "dat_year", name =~Category, # name of the legend
-                      text=~Description, hoverinfo="text") %>% 
-              add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-              layout(barmode='stack', title = "Encounters Aggregated by Year",
-                     yaxis=list(title='Encounters', visible=T), 
-                     xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+      plot_ly(source = "dat_year", name =~Category, # name of the legend
+              text=~Description, hoverinfo="text") %>% 
+      add_bars(x = ~Year, y = ~Encounter, color=~color,opacity=0.7) %>% # ensure each Category has unique color
+      #add_bars()
+      layout(barmode='stack', title = "Encounters Aggregated by Year",
+             yaxis=list(title='Encounters', visible=T), 
+             xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+    
+    print(dat_year())
     if (is.null(dat_year())) {
       pic_year <<- pc
       return(pic_year)
     }
+    
     pc 
     # bscols(
     #   widths=c(3,NA),
@@ -340,7 +406,7 @@ server <- function(input, output, session) {
     if (is.null(dat_year())) return(NULL)
     
     sd <- three_mss[pat_encounter_1,] %>% 
-             filter(Year == dat_year())
+      filter(Year == dat_year())
     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
     sd2 <- SharedData$new(sd)
     pc <- sd2 %>%
@@ -363,7 +429,7 @@ server <- function(input, output, session) {
     #   ),
     #   pc)
   })
-
+  
   output$dat_daily <- renderPlotly({
     if (is.null(dat_month())) return(NULL)
     
@@ -392,7 +458,7 @@ server <- function(input, output, session) {
     #   pc)
   })
   
-
+  
   # For MAP tabset
   ####################
   # the Manhattan plot
