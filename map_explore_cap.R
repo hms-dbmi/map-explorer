@@ -331,7 +331,7 @@ ui <- fluidPage(
                plotlyOutput("dat_month", height = 300),
                br(),
                plotlyOutput("dat_daily", height = 300))
-    )
+               )
     
   )) # ")" for mainPanel & fluidPage
 
@@ -357,41 +357,47 @@ server <- function(input, output, session) {
   })
   
   
-  # observeEvent(event_data("plotly_doubleclick", source = "dat_year",
-  #                         session = shiny::getDefaultReactiveDomain()), {
-  #   dat_year(NULL)
-  #   dat_month(NULL)
-  #   dat_daily(NULL)
-  # })
-  
   ####note: try to highlight only the clicked/selected bar; why with 'if' statement, it works.
-  # there are some issue in 'if' statement, if keep clicked on the barchart on the same year, there would be mistakes
+  # there are some issue in 'if' statement, if keep clicking on the barchart on the same year, there would be mistakes
+  
   output$dat_year <- renderPlotly({
-    #geom_point(data=subset(sub_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
+
+    if (!is.null(dat_year())) {
+      selected_df <- three_mss[pat_encounter_1,] %>% mutate(opacity = ifelse(dat_year() == Year,1,0.2))
+    } else{
+      selected_df <- three_mss[pat_encounter_1,] %>% mutate(opacity = 1)
+    }
+
     
-    # if(!is.null(dat_year())) {
-    #   select_df <- three_mss[pat_encounter_1,] %>% filter(Year == dat_year())
-    #   select_df <- SharedData$new(select_df)
-    # } else{
-    #   sd1 <- SharedData$new(three_mss[pat_encounter_1,])
-    # }
+    sd1 <- SharedData$new(selected_df)
+    # sd1 <- SharedData$new(three_mss[pat_encounter_1,])
     
-    sd1 <- SharedData$new(three_mss[pat_encounter_1,])
-    
+    # why it will highlight the same category
     pc <- sd1 %>%
-      plot_ly(source = "dat_year", name =~Category, # name of the legend
-              text=~Description, hoverinfo="text") %>% 
-      add_bars(x = ~Year, y = ~Encounter, color=~color,opacity=0.7) %>% # ensure each Category has unique color
-      #add_bars()
-      layout(barmode='stack', title = "Encounters Aggregated by Year",
-             yaxis=list(title='Encounters', visible=T), 
-             xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+              plot_ly(source = "dat_year", name =~Category, # name of the legend
+                      x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
+                      text=~Description, hoverinfo="text") %>%  # , opacity=~opacity
+              #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+              layout(barmode='stack', title = "Encounters Aggregated by Year",
+                     yaxis=list(title='Encounters', visible=T), 
+                     xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+          
     
-    print(dat_year())
     if (is.null(dat_year())) {
       pic_year <<- pc
-      return(pic_year)
-    }
+      return(pic_year) 
+    } #else{
+    #   
+    #   pc <- sd1 %>%
+    #     plot_ly(source = "dat_year", name =~Category, # name of the legend
+    #             x = ~Year, y = ~Encounter, color=~color, type="bar",
+    #             text=~Description, hoverinfo="text", marker = list(opacity=ifelse(dat_year() == ~Year,1,0.6))) %>% 
+    #     
+    #     # add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+    #     layout(barmode='stack', title = "Encounters Aggregated by Year",
+    #            yaxis=list(title='Encounters', visible=T), 
+    #            xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+    # }
     
     pc 
     # bscols(
@@ -406,7 +412,7 @@ server <- function(input, output, session) {
     if (is.null(dat_year())) return(NULL)
     
     sd <- three_mss[pat_encounter_1,] %>% 
-      filter(Year == dat_year())
+             filter(Year == dat_year())
     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
     sd2 <- SharedData$new(sd)
     pc <- sd2 %>%
@@ -429,7 +435,7 @@ server <- function(input, output, session) {
     #   ),
     #   pc)
   })
-  
+
   output$dat_daily <- renderPlotly({
     if (is.null(dat_month())) return(NULL)
     
@@ -458,7 +464,7 @@ server <- function(input, output, session) {
     #   pc)
   })
   
-  
+
   # For MAP tabset
   ####################
   # the Manhattan plot
