@@ -311,19 +311,23 @@ ui <- fluidPage(
       tabPanel("Main",
                h3("MAP Manhattan Plot"),
                fluidRow(
-                 plotlyOutput("plot"),
-                 br(),
-                 textOutput("sig_tab"),
-                 br(),
-                 textOutput("cond_num"),     #report number of phecodes above threshold
-                 textOutput("brush"),        #report number of phecodes both above threshold and selected
-                 br(),
-                 DT::DTOutput("panel") ,
-                 tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-                 tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-                 tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
+                 plotlyOutput("plot",height = 500))
+       
       ),
       
+      tabPanel("Info Table",
+               br(),
+               textOutput("sig_tab"),
+               br(),
+               textOutput("cond_num"),     #report number of phecodes above threshold
+               textOutput("brush"),        #report number of phecodes both above threshold and selected
+               br(),
+               DT::DTOutput("panel"),
+               tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+               tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+               tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))
+        
+      ),
       tabPanel("MS",
                h3("MS Data Overview"),
                plotlyOutput("dat_year", height = 300),
@@ -573,9 +577,11 @@ server <- function(input, output, session) {
                          cl = sub_df$groupnum,
                          Phenotype = sub_df$pheno,
                          MAP_prob = sub_df$map_prob %>% round(4),
-                         MAP_cutoff = sub_df$cutoff %>% round(4))
+                         MAP_cutoff = sub_df$cutoff %>% round(4)) %>%
+              # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
+              arrange(cl,desc(MAP_prob))
     
-    datatable(sub_df,options = list(pageLength =5)) %>%    # each time shows only 5 rows in the output table
+    datatable(sub_df,options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -608,3 +614,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
