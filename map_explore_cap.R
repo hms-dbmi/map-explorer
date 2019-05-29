@@ -281,11 +281,10 @@ three_mss <- three_mss %>% group_by(Year=floor_date(StartDate, "year"))
 
 three_mss$color <- factor(three_mss$Category, labels = RColorBrewer::brewer.pal(length(unique(three_mss$Category)), name = "Set2"))
 
-pat_encounter_1 <- which(three_mss$PatientNum == "68286")
-pat_encounter_2 <- which(three_mss$PatientNum == "99492")
-pat_encounter_3 <- which(three_mss$PatientNum == "106579")
-pat_encounter <- c(pat_encounter_1, pat_encounter_2, pat_encounter_3)
-
+# pat_encounter_1 <- which(three_mss$PatientNum == "68286")
+# pat_encounter_2 <- which(three_mss$PatientNum == "99492")
+# pat_encounter_3 <- which(three_mss$PatientNum == "106579")
+choices <- c(68286, 99492, 106579)
 
 ###########
 ## Capstone project
@@ -338,6 +337,12 @@ ui <- fluidPage(
       ),
       tabPanel("MS",
                h3("MS Data Overview"),
+               selectInput(inputId="patient_num",
+                           label="Select Patient Number: ",
+                           choices=c(68286, 99492, 106579), 
+                           selected = 1,
+                           width = "30%"), # modify the size of the input box
+               br(),
                plotlyOutput("dat_year", height = 300),
                br(),
                plotlyOutput("dat_month", height = 300),
@@ -368,21 +373,30 @@ server <- function(input, output, session) {
     dat_daily(NULL)
   })
   
+  # when select a new patient, only show the annual overview
+  observeEvent(input$patient_num, {
+    dat_year(NULL)
+    dat_month(NULL)
+    dat_daily(NULL)
+  })
   
   ####note: try to highlight only the clicked/selected bar; why with 'if' statement, it works.
   # there are some issue in 'if' statement, if keep clicking on the barchart on the same year, there would be mistakes
   
   output$dat_year <- renderPlotly({
     
+    id <- match(input$patient_num, choices)
+    pat_encounter <- which(three_mss$PatientNum == choices[id])
+    
     if (!is.null(dat_year())) {
-      selected_df <- three_mss[pat_encounter_1,] %>% mutate(opacity = ifelse(dat_year() == Year,1,0.2))
+      selected_df <- three_mss[pat_encounter,] %>% mutate(opacity = ifelse(dat_year() == Year,1,0.2))
     } else{
-      selected_df <- three_mss[pat_encounter_1,] %>% mutate(opacity = 1)
+      selected_df <- three_mss[pat_encounter,] %>% mutate(opacity = 1)
     }
     
     
     sd1 <- SharedData$new(selected_df)
-    # sd1 <- SharedData$new(three_mss[pat_encounter_1,])
+    # sd1 <- SharedData$new(three_mss[pat_encounter,])
     
     # why it will highlight the same category
     pc <- sd1 %>%
@@ -423,7 +437,10 @@ server <- function(input, output, session) {
   output$dat_month <- renderPlotly({
     if (is.null(dat_year())) return(NULL)
     
-    sd <- three_mss[pat_encounter_1,] %>% 
+    id <- match(input$patient_num, choices)
+    pat_encounter <- which(three_mss$PatientNum == choices[id])
+    
+    sd <- three_mss[pat_encounter,] %>% 
       filter(Year == dat_year())
     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
     sd2 <- SharedData$new(sd)
@@ -451,7 +468,10 @@ server <- function(input, output, session) {
   output$dat_daily <- renderPlotly({
     if (is.null(dat_month())) return(NULL)
     
-    sd <- three_mss[pat_encounter_1,] %>% 
+    id <- match(input$patient_num, choices)
+    pat_encounter <- which(three_mss$PatientNum == choices[id])
+    
+    sd <- three_mss[pat_encounter,] %>% 
       filter(Month == dat_month())
     mmonth <- sd$Month[1] %>% substr(1, 7)
     sd3 <- SharedData$new(sd)
@@ -597,7 +617,7 @@ server <- function(input, output, session) {
     
     # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
     datatable(sub_df %>% arrange(cl,desc(MAP_prob)),
-                         options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
+              options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
