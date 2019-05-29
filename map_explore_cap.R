@@ -10,6 +10,9 @@ library(plotly)
 library(purrr)
 library(scales)
 
+library(readr)
+library(lubridate)
+
 # for plotting
 library(shiny)
 library(shinyjs)
