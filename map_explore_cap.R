@@ -259,6 +259,10 @@ three_ms$StartDate <- as.Date(three_ms$StartDate, "%m/%d/%Y")
 three_ms_vd <- read_csv("data/3_MS_patients_VD.csv")   # 48 5
 three_ms_vd$StartDate <- as.Date(three_ms_vd$StartDate, "%m/%d/%Y")
 
+three_ms_vd$description <- paste0("Patient Number: ",three_ms_vd$PatientNum,
+                                  "\nStart Date: ",three_ms_vd$StartDate, 
+                                  "\nVitamin D Value: ",three_ms_vd$Value)
+
 # read in the CUIs lists
 ms_CUI <- read_csv("data/MS_CUI_ICD_list.csv")
 
