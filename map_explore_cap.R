@@ -347,8 +347,18 @@ ui <- fluidPage(
                br(),
                plotlyOutput("dat_month", height = 300),
                br(),
-               plotlyOutput("dat_daily", height = 300))
-    )
+               plotlyOutput("dat_daily", height = 300)
+       ),
+      tabPanel("VD",
+               h3("Vitamin D Levels"),
+               selectInput(inputId="patient_vd_num",
+                           label="Select Patient Number: ",
+                           choices=c(68286, 99492, 106579), 
+                           selected = 1,
+                           width = "30%"), # modify the size of the input box
+               br(),
+               plotlyOutput("vitd")
+       ))
     
   )) # ")" for mainPanel & fluidPage
 
@@ -393,8 +403,7 @@ server <- function(input, output, session) {
     } else{
       selected_df <- three_mss[pat_encounter,] %>% mutate(opacity = 1)
     }
-    
-    
+
     sd1 <- SharedData$new(selected_df)
     # sd1 <- SharedData$new(three_mss[pat_encounter,])
     
@@ -497,7 +506,7 @@ server <- function(input, output, session) {
   })
   
   
-  # For MAP tabset
+  # For MAIN tabset
   ####################
   # the Manhattan plot
   output$plot <- renderPlotly({
@@ -565,6 +574,8 @@ server <- function(input, output, session) {
     
   })
   
+  # For Info Table tabset
+  ####################
   output$sig_tab <- renderText({
     paste("Significant Phecodes Table for Patient",input$individual_id)
   })
@@ -646,6 +657,25 @@ server <- function(input, output, session) {
     
   })
   
+  # For VD tabset
+  ###############
+  output$vitd <- renderPlotly({
+    
+      id <- match(input$patient_vd_num, choices)
+      pat_encounter <- which(three_ms_vd$PatientNum == choices[id])
+      
+      sd1 <- SharedData$new(three_ms_vd[pat_encounter,])
+      
+      pc <- sd1 %>%
+        plot_ly(x = ~StartDate, y = ~Value, type="scatter",    
+                text=~description, hoverinfo="text") %>%  
+        hide_legend() %>%
+        layout(yaxis=list(title='Vitamin D values', visible=T), 
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+      
+      pc 
+   
+  })
   
 }
 
