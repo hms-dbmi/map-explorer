@@ -312,7 +312,7 @@ ui <- fluidPage(
                h3("MAP Manhattan Plot"),
                fluidRow(
                  plotlyOutput("plot",height = 500))
-       
+               
       ),
       
       tabPanel("Info Table",
@@ -322,11 +322,12 @@ ui <- fluidPage(
                textOutput("cond_num"),     #report number of phecodes above threshold
                textOutput("brush"),        #report number of phecodes both above threshold and selected
                br(),
+               radioButtons("details", "More details (with MAP cutoff):", choices=c("Yes","No"), selected = "No"),
                DT::DTOutput("panel"),
                tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
                tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
                tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))
-        
+               
       ),
       tabPanel("MS",
                h3("MS Data Overview"),
@@ -335,7 +336,7 @@ ui <- fluidPage(
                plotlyOutput("dat_month", height = 300),
                br(),
                plotlyOutput("dat_daily", height = 300))
-               )
+    )
     
   )) # ")" for mainPanel & fluidPage
 
@@ -365,27 +366,27 @@ server <- function(input, output, session) {
   # there are some issue in 'if' statement, if keep clicking on the barchart on the same year, there would be mistakes
   
   output$dat_year <- renderPlotly({
-
+    
     if (!is.null(dat_year())) {
       selected_df <- three_mss[pat_encounter_1,] %>% mutate(opacity = ifelse(dat_year() == Year,1,0.2))
     } else{
       selected_df <- three_mss[pat_encounter_1,] %>% mutate(opacity = 1)
     }
-
+    
     
     sd1 <- SharedData$new(selected_df)
     # sd1 <- SharedData$new(three_mss[pat_encounter_1,])
     
     # why it will highlight the same category
     pc <- sd1 %>%
-              plot_ly(source = "dat_year", name =~Category, # name of the legend
-                      x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
-                      text=~Description, hoverinfo="text") %>%  # , opacity=~opacity
-              #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-              layout(barmode='stack', title = "Encounters Aggregated by Year",
-                     yaxis=list(title='Encounters', visible=T), 
-                     xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
-          
+      plot_ly(source = "dat_year", name =~Category, # name of the legend
+              x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
+              text=~Description, hoverinfo="text") %>%  # , opacity=~opacity
+      #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+      layout(barmode='stack', title = "Encounters Aggregated by Year",
+             yaxis=list(title='Encounters', visible=T), 
+             xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+    
     
     if (is.null(dat_year())) {
       pic_year <<- pc
@@ -416,7 +417,7 @@ server <- function(input, output, session) {
     if (is.null(dat_year())) return(NULL)
     
     sd <- three_mss[pat_encounter_1,] %>% 
-             filter(Year == dat_year())
+      filter(Year == dat_year())
     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
     sd2 <- SharedData$new(sd)
     pc <- sd2 %>%
@@ -439,7 +440,7 @@ server <- function(input, output, session) {
     #   ),
     #   pc)
   })
-
+  
   output$dat_daily <- renderPlotly({
     if (is.null(dat_month())) return(NULL)
     
@@ -468,7 +469,7 @@ server <- function(input, output, session) {
     #   pc)
   })
   
-
+  
   # For MAP tabset
   ####################
   # the Manhattan plot
@@ -572,16 +573,24 @@ server <- function(input, output, session) {
                                     map_prob >= y.min & map_prob <= y.max)
     }
     
-    sub_df <- data.frame(Phecodes = sub_df$phecode, 
-                         Group = sub_df$group,
-                         cl = sub_df$groupnum,
-                         Phenotype = sub_df$pheno,
-                         MAP_prob = sub_df$map_prob %>% round(4),
-                         MAP_cutoff = sub_df$cutoff %>% round(4)) %>%
-              # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
-              arrange(cl,desc(MAP_prob))
+    if(input$details == "Yes"){
+      sub_df <- data.frame(Phecodes = sub_df$phecode, 
+                           Group = sub_df$group,
+                           cl = sub_df$groupnum,
+                           Phenotype = sub_df$pheno,
+                           MAP_prob = sub_df$map_prob %>% round(4),
+                           MAP_cutoff = sub_df$cutoff %>% round(4))
+    } else{
+      sub_df <- data.frame(Phecodes = sub_df$phecode, 
+                           Group = sub_df$group,
+                           cl = sub_df$groupnum,
+                           Phenotype = sub_df$pheno,
+                           MAP_prob = sub_df$map_prob %>% round(4)) 
+    }
     
-    datatable(sub_df,options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
+    # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
+    datatable(sub_df %>% arrange(cl,desc(MAP_prob)),
+                         options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -614,4 +623,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
