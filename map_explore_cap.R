@@ -357,7 +357,9 @@ ui <- fluidPage(
                            selected = 1,
                            width = "30%"), # modify the size of the input box
                br(),
-               plotlyOutput("vitd")
+               plotlyOutput("vitd"),
+               br(),
+               plotlyOutput("all_five", height = 600)
        ))
     
   )) # ")" for mainPanel & fluidPage
@@ -407,7 +409,6 @@ server <- function(input, output, session) {
     sd1 <- SharedData$new(selected_df)
     # sd1 <- SharedData$new(three_mss[pat_encounter,])
     
-    # why it will highlight the same category
     pc <- sd1 %>%
       plot_ly(source = "dat_year", name =~Category, # name of the legend
               x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
@@ -489,7 +490,7 @@ server <- function(input, output, session) {
               text=~Description, hoverinfo="text") %>% 
       add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
       layout(barmode='stack', title = paste0("Encounters Aggregated by Day (Month ", mmonth,")"),
-             yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Day', rangeslider=list(type="date"), visible=TRUE))
+             yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
     
     if (is.null(dat_daily())) {
       pic_daily <<- pc
@@ -693,6 +694,43 @@ server <- function(input, output, session) {
       
       pc 
    
+  })
+  
+  
+  output$all_five <- renderPlotly({
+   
+     ay <- list(               # set up for the yaxis
+      autotick = FALSE,
+      ticks = "outside",
+      tick0 = 0,
+      dtick = 1,
+      ticklen = 1,
+      tickwidth = 1,
+      tickcolor = toRGB("grey")
+      #title='Encounters'
+    )
+     
+
+    id <- match(input$patient_vd_num, choices)
+    pat_encounter <- which(three_mss$PatientNum == choices[id])
+    
+    sd1 <- SharedData$new(three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
+                            transform(id = as.integer(factor(Category))) %>%
+                            arrange(id)) 
+                          
+    pc <- sd1 %>%
+      plot_ly(name =~Category,
+              x = ~StartDate, y = ~Encounter, color=~color, #type="bar",
+              text=~Description, hoverinfo="text",
+              yaxis = ~paste0("y", id)) %>%
+      add_bars() %>%
+      layout(title = "Encounters Aggregated by Year",
+             yaxis=ay,
+             xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
+      subplot(nrows = 6, shareX = TRUE,
+              margin = 0.03) 
+    
+    pc
   })
   
 }
