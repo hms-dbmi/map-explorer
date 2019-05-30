@@ -411,7 +411,7 @@ server <- function(input, output, session) {
     pc <- sd1 %>%
       plot_ly(source = "dat_year", name =~Category, # name of the legend
               x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
-              text=~Description, hoverinfo="text") %>%  # , opacity=~opacity
+              text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
       #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
       layout(barmode='stack', title = "Encounters Aggregated by Year",
              yaxis=list(title='Encounters', visible=T), 
@@ -487,7 +487,6 @@ server <- function(input, output, session) {
     pc <- sd3 %>%
       plot_ly(source = "dat_daily", name =~Category,
               text=~Description, hoverinfo="text") %>% 
-      suppressWarnings %>% 
       add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
       layout(barmode='stack', title = paste0("Encounters Aggregated by Day (Month ", mmonth,")"),
              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Day', rangeslider=list(type="date"), visible=TRUE))
@@ -666,12 +665,31 @@ server <- function(input, output, session) {
       
       sd1 <- SharedData$new(three_ms_vd[pat_encounter,])
       
+      # Prepare: add vertical lines under each marker
+      line_list <- list()
+      for(i in 1:nrow(three_ms_vd[pat_encounter,])){ 
+        line_color <- "darkblue"
+        line_list[[i]] <- 
+          list(type      = "line",
+               fillcolor = line_color,
+               line      = list(color = line_color),
+               opacity   = 0.5,
+               x0        = three_ms_vd[pat_encounter,]$StartDate[i],
+               x1        = three_ms_vd[pat_encounter,]$StartDate[i],
+               xref      = "x",
+               y0        = 0, 
+               y1        = three_ms_vd[pat_encounter,]$Value[i],
+               yref      = "y")
+      }
+      
       pc <- sd1 %>%
-        plot_ly(x = ~StartDate, y = ~Value, type="scatter",    
+        plot_ly(x = ~StartDate, y = ~Value, 
+                type="scatter", mode="markers",   
                 text=~description, hoverinfo="text") %>%  
         hide_legend() %>%
         layout(yaxis=list(title='Vitamin D values', visible=T), 
-               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T),
+               shapes=line_list)  # add vertical lines under each marker
       
       pc 
    
