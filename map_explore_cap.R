@@ -348,7 +348,7 @@ ui <- fluidPage(
                plotlyOutput("dat_month", height = 300),
                br(),
                plotlyOutput("dat_daily", height = 300)
-       ),
+      ),
       tabPanel("VD",
                h3("Vitamin D Levels"),
                selectInput(inputId="patient_vd_num",
@@ -359,8 +359,8 @@ ui <- fluidPage(
                br(),
                plotlyOutput("vitd"),
                br(),
-               plotlyOutput("all_five", height = 600)
-       ))
+               plotlyOutput("all_six", height = 600)
+      ))
     
   )) # ")" for mainPanel & fluidPage
 
@@ -405,7 +405,7 @@ server <- function(input, output, session) {
     } else{
       selected_df <- three_mss[pat_encounter,] %>% mutate(opacity = 1)
     }
-
+    
     sd1 <- SharedData$new(selected_df)
     # sd1 <- SharedData$new(three_mss[pat_encounter,])
     
@@ -661,45 +661,45 @@ server <- function(input, output, session) {
   ###############
   output$vitd <- renderPlotly({
     
-      id <- match(input$patient_vd_num, choices)
-      pat_encounter <- which(three_ms_vd$PatientNum == choices[id])
-      
-      sd1 <- SharedData$new(three_ms_vd[pat_encounter,])
-      
-      # Prepare: add vertical lines under each marker
-      line_list <- list()
-      for(i in 1:nrow(three_ms_vd[pat_encounter,])){ 
-        line_color <- "darkblue"
-        line_list[[i]] <- 
-          list(type      = "line",
-               fillcolor = line_color,
-               line      = list(color = line_color),
-               opacity   = 0.5,
-               x0        = three_ms_vd[pat_encounter,]$StartDate[i],
-               x1        = three_ms_vd[pat_encounter,]$StartDate[i],
-               xref      = "x",
-               y0        = 0, 
-               y1        = three_ms_vd[pat_encounter,]$Value[i],
-               yref      = "y")
-      }
-      
-      pc <- sd1 %>%
-        plot_ly(x = ~StartDate, y = ~Value, 
-                type="scatter", mode="markers",   
-                text=~description, hoverinfo="text") %>%  
-        hide_legend() %>%
-        layout(yaxis=list(title='Vitamin D values', visible=T), 
-               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T),
-               shapes=line_list)  # add vertical lines under each marker
-      
-      pc 
-   
+    id <- match(input$patient_vd_num, choices)
+    pat_encounter <- which(three_ms_vd$PatientNum == choices[id])
+    
+    sd1 <- SharedData$new(three_ms_vd[pat_encounter,])
+    
+    # Prepare: add vertical lines under each marker
+    line_list <- list()
+    for(i in 1:nrow(three_ms_vd[pat_encounter,])){ 
+      line_color <- "darkblue"
+      line_list[[i]] <- 
+        list(type      = "line",
+             fillcolor = line_color,
+             line      = list(color = line_color),
+             opacity   = 0.5,
+             x0        = three_ms_vd[pat_encounter,]$StartDate[i],
+             x1        = three_ms_vd[pat_encounter,]$StartDate[i],
+             xref      = "x",
+             y0        = 0, 
+             y1        = three_ms_vd[pat_encounter,]$Value[i],
+             yref      = "y")
+    }
+    
+    pc <- sd1 %>%
+      plot_ly(x = ~StartDate, y = ~Value, 
+              type="scatter", mode="markers",   
+              text=~description, hoverinfo="text") %>%  
+      hide_legend() %>%
+      layout(yaxis=list(title='Vitamin D values', visible=T), 
+             xaxis=list(title='Year', rangeslider=list(type="date"), visible=T),
+             shapes=line_list)  # add vertical lines under each marker
+    
+    pc 
+    
   })
   
   
-  output$all_five <- renderPlotly({
-   
-     ay <- list(               # set up for the yaxis
+  output$all_six <- renderPlotly({
+    
+    ay <- list(               # set up for the yaxis
       autotick = FALSE,
       ticks = "outside",
       tick0 = 0,
@@ -709,22 +709,26 @@ server <- function(input, output, session) {
       tickcolor = toRGB("grey")
       #title='Encounters'
     )
-     
-
+    
+    
     id <- match(input$patient_vd_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
     
-    sd1 <- SharedData$new(three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
-                            transform(id = as.integer(factor(Category))) %>%
-                            arrange(id)) 
-                          
+ 
+    sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
+            transform(id = as.integer(factor(Category))) %>%
+            arrange(id) #%>% mutate(width=0.01)
+    
     pc <- sd1 %>%
       plot_ly(name =~Category,
-              x = ~StartDate, y = ~Encounter, color=~color, #type="bar",
+              x = ~StartDate, y = ~Encounter, 
+              marker=list(color=~color, showscale=FALSE),
               text=~Description, hoverinfo="text",
               yaxis = ~paste0("y", id)) %>%
-      add_bars() %>%
+      # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
+      add_bars(width=1000*3600*30) %>%    # set consistent bar width
       layout(title = "Encounters Aggregated by Year",
+             bargap = 0.05,   # set bar gap
              yaxis=ay,
              xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
       subplot(nrows = 6, shareX = TRUE,
@@ -736,3 +740,5 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
+
