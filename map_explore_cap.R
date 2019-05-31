@@ -669,7 +669,7 @@ server <- function(input, output, session) {
     # Prepare: add vertical lines under each marker
     line_list <- list()
     for(i in 1:nrow(three_ms_vd[pat_encounter,])){ 
-      line_color <- "darkblue"
+      line_color <- "#FFD92F"
       line_list[[i]] <- 
         list(type      = "line",
              fillcolor = line_color,
@@ -684,7 +684,7 @@ server <- function(input, output, session) {
     }
     
     pc <- sd1 %>%
-      plot_ly(x = ~StartDate, y = ~Value, 
+      plot_ly(x = ~StartDate, y = ~Value, colors="#FFD92F",color="#FFD92F", #fix the `requested palette with 3 different levels` issue.
               type="scatter", mode="markers",   
               text=~description, hoverinfo="text") %>%  
       hide_legend() %>%
@@ -714,15 +714,14 @@ server <- function(input, output, session) {
     id <- match(input$patient_vd_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
     
- 
+    
     sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
-            transform(id = as.integer(factor(Category))) %>%
-            arrange(id) #%>% mutate(width=0.01)
+      transform(id = as.integer(factor(Category))) %>%
+      arrange(id) #%>% mutate(width=0.01)
     
     pc <- sd1 %>%
       plot_ly(name =~Category,
-              x = ~StartDate, y = ~Encounter, 
-              marker=list(color=~color, showscale=FALSE),
+              x = ~StartDate, y = ~Encounter, color=~color,
               text=~Description, hoverinfo="text",
               yaxis = ~paste0("y", id)) %>%
       # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
