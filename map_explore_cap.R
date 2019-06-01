@@ -317,7 +317,14 @@ ui <- fluidPage(
       tabPanel("Main",
                h3("MAP Manhattan Plot"),
                fluidRow(
-                 plotlyOutput("plot",height = 500))
+                 plotlyOutput("plot",height = 500),
+                 br(),
+                 h3("Word Cloud of Phenotypes based on MAP Probabilities"),
+                 # for Word Cloud
+                 # MUST load the ECharts javascript library in advance
+                 loadEChartsLibrary(),
+                 tags$div(id="wordcloud", style="width:100%;height:500px;"),
+                 deliverChart(div_id = "wordcloud"))            
                
       ),
       
@@ -359,8 +366,8 @@ ui <- fluidPage(
                br(),
                plotlyOutput("vitd"),
                br(),
-               plotlyOutput("all_six", height = 600)
-      ))
+               plotlyOutput("all_six", height = 600))
+    ) # for tabsetPanel
     
   )) # ")" for mainPanel & fluidPage
 
@@ -516,6 +523,7 @@ server <- function(input, output, session) {
     max_sub <- nrow(vis_df)*mat  
     sub_df <- vis_df_all[min_sub:max_sub, ]
     
+    
     tmp <- ggplot(sub_df, aes(x = phenotypes, y = map_prob,text = description)) +
       
       # Show all points
@@ -544,6 +552,25 @@ server <- function(input, output, session) {
     ggplotly(tmp, tooltip="text")
     # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
   })
+  
+  
+  ###############
+  # Word Cloud
+  observeEvent(input$individual_id, {
+    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    word_cl <- vis_df_all[min_sub:max_sub, ] %>% 
+               filter(is_highlight == "yes") %>% 
+               .[,c(7,6)]  #extract columns map_prob and pheno
+    colnames(word_cl) <- c("name","value")
+    
+    renderWordcloud("wordcloud", data =word_cl,
+                    shape = 'circle',
+                    rotationRange = c(-90, 90),
+                    grid_size = 5, sizeRange = c(25, 40))
+  })
+  
   
   ###############
   # the bar chart
@@ -739,5 +766,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
-
