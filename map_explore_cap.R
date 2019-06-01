@@ -696,7 +696,7 @@ server <- function(input, output, session) {
     # Prepare: add vertical lines under each marker
     line_list <- list()
     for(i in 1:nrow(three_ms_vd[pat_encounter,])){ 
-      line_color <- "#FFD92F"
+      line_color <- "#FC8D62"
       line_list[[i]] <- 
         list(type      = "line",
              fillcolor = line_color,
@@ -711,7 +711,7 @@ server <- function(input, output, session) {
     }
     
     pc <- sd1 %>%
-      plot_ly(x = ~StartDate, y = ~Value, colors="#FFD92F",color="#FFD92F", #fix the `requested palette with 3 different levels` issue.
+      plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
               type="scatter", mode="markers",   
               text=~description, hoverinfo="text") %>%  
       hide_legend() %>%
