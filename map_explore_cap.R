@@ -319,27 +319,26 @@ ui <- fluidPage(
                fluidRow(
                  plotlyOutput("plot",height = 500),
                  br(),
-                 h3("Word Cloud of Phenotypes based on MAP Probabilities"),
-                 # for Word Cloud
-                 # MUST load the ECharts javascript library in advance
-                 loadEChartsLibrary(),
-                 tags$div(id="wordcloud", style="width:100%;height:500px;"),
-                 deliverChart(div_id = "wordcloud"))            
-               
+                 textOutput("sig_tab"),
+                 br(),
+                 textOutput("cond_num"),     #report number of phecodes above threshold
+                 textOutput("brush"),        #report number of phecodes both above threshold and selected
+                 br(),
+                 radioButtons("details", "More details (with MAP cutoff):", choices=c("Yes","No"), selected = "No"),
+                 DT::DTOutput("panel"),
+                 tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+                 tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+                 tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
+                 
       ),
       
-      tabPanel("Info Table",
-               br(),
-               textOutput("sig_tab"),
-               br(),
-               textOutput("cond_num"),     #report number of phecodes above threshold
-               textOutput("brush"),        #report number of phecodes both above threshold and selected
-               br(),
-               radioButtons("details", "More details (with MAP cutoff):", choices=c("Yes","No"), selected = "No"),
-               DT::DTOutput("panel"),
-               tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-               tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-               tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))
+      tabPanel("Word Cloud",
+               h3("Word Cloud of Phenotypes based on MAP Probabilities"),
+               # for Word Cloud
+               # MUST load the ECharts javascript library in advance
+               loadEChartsLibrary(),
+               tags$div(id="wordcloud", style="width:100%;height:500px;"),
+               deliverChart(div_id = "wordcloud")
                
       ),
       tabPanel("MS",
@@ -429,7 +428,7 @@ server <- function(input, output, session) {
     if (is.null(dat_year())) {
       pic_year <<- pc
       return(pic_year) 
-    
+    } 
     pc 
     # bscols(
     #   widths=c(3,NA),
@@ -452,6 +451,7 @@ server <- function(input, output, session) {
     pc <- sd2 %>%
       plot_ly(source = "dat_month", name =~Category,
               text=~Description, hoverinfo="text") %>% 
+      suppressWarnings %>%
       add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
       layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
@@ -485,7 +485,6 @@ server <- function(input, output, session) {
       return(pic_daily)
     }
     pc
-
   })
   
   
@@ -498,7 +497,6 @@ server <- function(input, output, session) {
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
     sub_df <- vis_df_all[min_sub:max_sub, ]
-    
     
     tmp <- ggplot(sub_df, aes(x = phenotypes, y = map_prob,text = description)) +
       
@@ -541,7 +539,8 @@ server <- function(input, output, session) {
                .[,c(7,6)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
     
-    renderWordcloud("wordcloud", data =word_cl,
+    # the actual word cloud generating function
+    renderWordcloud("wordcloud", data = word_cl,
                     shape = 'circle',
                     rotationRange = c(-90, 90),
                     grid_size = 5, sizeRange = c(25, 40))
@@ -631,7 +630,7 @@ server <- function(input, output, session) {
     
     # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
     datatable(sub_df %>% arrange(cl,desc(MAP_prob)),
-              options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
+              options = list(pageLength = 6)) %>%    # each time shows only 6 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -720,7 +719,7 @@ server <- function(input, output, session) {
     
     sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
       transform(id = as.integer(factor(Category))) %>%
-      arrange(id) 
+      arrange(id) #%>% mutate(width=0.01)
     
     pc <- sd1 %>%
       plot_ly(name =~Category,
@@ -742,3 +741,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
