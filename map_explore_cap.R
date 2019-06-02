@@ -429,18 +429,6 @@ server <- function(input, output, session) {
     if (is.null(dat_year())) {
       pic_year <<- pc
       return(pic_year) 
-    } #else{
-    #   
-    #   pc <- sd1 %>%
-    #     plot_ly(source = "dat_year", name =~Category, # name of the legend
-    #             x = ~Year, y = ~Encounter, color=~color, type="bar",
-    #             text=~Description, hoverinfo="text", marker = list(opacity=ifelse(dat_year() == ~Year,1,0.6))) %>% 
-    #     
-    #     # add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-    #     layout(barmode='stack', title = "Encounters Aggregated by Year",
-    #            yaxis=list(title='Encounters', visible=T), 
-    #            xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
-    # }
     
     pc 
     # bscols(
@@ -464,7 +452,6 @@ server <- function(input, output, session) {
     pc <- sd2 %>%
       plot_ly(source = "dat_month", name =~Category,
               text=~Description, hoverinfo="text") %>% 
-      suppressWarnings %>%
       add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
       layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
@@ -474,12 +461,6 @@ server <- function(input, output, session) {
       return(pic_month)
     }
     pc
-    # bscols(
-    #   widths=c(3,NA),
-    #   list(
-    #     filter_checkbox('category', 'Category', sd2, ~Category, inline=F)
-    #   ),
-    #   pc)
   })
   
   output$dat_daily <- renderPlotly({
@@ -504,12 +485,7 @@ server <- function(input, output, session) {
       return(pic_daily)
     }
     pc
-    # bscols(
-    #   widths=c(3,NA),
-    #   list(
-    #     filter_checkbox('category', 'Category', sd3, ~Category, inline=F)
-    #   ),
-    #   pc)
+
   })
   
   
@@ -744,7 +720,7 @@ server <- function(input, output, session) {
     
     sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
       transform(id = as.integer(factor(Category))) %>%
-      arrange(id) #%>% mutate(width=0.01)
+      arrange(id) 
     
     pc <- sd1 %>%
       plot_ly(name =~Category,
