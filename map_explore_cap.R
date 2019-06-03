@@ -285,7 +285,7 @@ three_mss$color <- factor(three_mss$Category, labels = RColorBrewer::brewer.pal(
 pat_encounter_1 <- which(three_mss$PatientNum == "68286")
 pat_encounter_2 <- which(three_mss$PatientNum == "99492")
 pat_encounter_3 <- which(three_mss$PatientNum == "106579")
-choices <- c(68286, 99492, 106579)
+choices <- unique(three_mss$PatientNum)
 
 
 ###########
@@ -300,7 +300,7 @@ ui <- fluidPage(
     h4("You can explore the MAP data in this Shiny App!"),    
     selectInput(inputId="individual_id",
                 label="Select Patient ID: ",
-                choices=c(1:4), 
+                choices=c(1:nrow(dat)), 
                 selected = 1, selectize = F),
     plotlyOutput("bar"),
     
@@ -347,7 +347,7 @@ ui <- fluidPage(
                h3("MS Data Overview"),
                selectInput(inputId="patient_num",
                            label="Select Patient Number: ",
-                           choices=c(68286, 99492, 106579), 
+                           choices=choices, 
                            selected = 1,
                            width = "30%"), # modify the size of the input box
                br(),
@@ -361,7 +361,7 @@ ui <- fluidPage(
                h3("Vitamin D Levels"),
                selectInput(inputId="patient_vd_num",
                            label="Select Patient Number: ",
-                           choices=c(68286, 99492, 106579), 
+                           choices=choices, 
                            selected = 1,
                            width = "30%"), # modify the size of the input box
                br(),
@@ -479,7 +479,7 @@ server <- function(input, output, session) {
       plot_ly(source = "dat_daily", name =~Category,
               text=~Description, hoverinfo="text") %>% 
       add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
-      layout(barmode='stack', title = paste0("Encounters Aggregated by Day (Month ", mmonth,")"),
+      layout(barmode='stack', title = paste0("Encounters by Day (Month ", mmonth,")"),
              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
     
     if (is.null(dat_daily())) {
@@ -525,7 +525,7 @@ server <- function(input, output, session) {
       )
     
     # make the plot interactive  
-    ggplotly(tmp, tooltip="text")
+    ggplotly(tmp, tooltip="text")        
     # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
   })
   
@@ -533,12 +533,24 @@ server <- function(input, output, session) {
   ###############
   # Word Cloud
   observeEvent(input$individual_id, {
+    lasso <- event_data("plotly_relayout")
+    # print(lasso)
+    
+    # Still there are some problems!
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
-    word_cl <- vis_df_all[min_sub:max_sub, ] %>% 
-      filter(is_highlight == "yes") %>% 
-      .[,c(7,6)]  #extract columns map_prob and pheno
+    
+    sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
+    if (!is.null(lasso) & length(lasso)==4) {
+      x.min <- lasso[1]; x.max <- lasso[2]
+      y.min <- lasso[3]; y.max <- lasso[4]
+      
+      sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
+                                    map_prob >= y.min & map_prob <= y.max)
+    }
+    
+    word_cl <- sub_df %>% .[,c(7,6)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
     
     # the actual word cloud generating function
@@ -611,7 +623,7 @@ server <- function(input, output, session) {
     
   })
   
-  # For Info Table tabset
+  # For Info Table 
   ####################
   output$sig_tab <- renderText({
     paste("Significant Phecodes Table for Patient",input$individual_id)
@@ -628,13 +640,12 @@ server <- function(input, output, session) {
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
   
-  
-  
+
   # Show the result in the DT table                        
   output$panel <- DT::renderDT({
     
     lasso <- event_data("plotly_relayout")
-    
+
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
@@ -763,7 +774,7 @@ server <- function(input, output, session) {
               yaxis = ~paste0("y", id)) %>%
       # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
       add_bars(width=1000*3600*30) %>%    # set consistent bar width
-      layout(title = "Encounters Aggregated by Year",
+      layout(title = "Encounters by Day",
              bargap = 0.05,   # set bar gap
              yaxis=ay,
              xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
@@ -776,4 +787,5 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
 
