@@ -20,12 +20,13 @@ library(DT)
 library(reshape2)
 library(crosstalk)
 
-
+# for Word cloud generator
+library(ECharts2Shiny)
 
 # Read in the data
 
 # `dat` contains the MAP probabilities for each individual patient across all diseases
-# setwd("~/Desktop/capstone")
+setwd("~/Desktop/capstone")
 load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
 load("data/MAPcutoff.Rdata")       # 1866    2
 load("data/pheinfo.rda")           # 1814    5
@@ -126,8 +127,7 @@ for (i_indi in 1:nrow(dat)){
     tmp <- col2rgb(ele)
     colvis_rgb <- c(colvis_rgb,str_glue("rgb({tmp[1]},{tmp[2]},{tmp[3]})"))
   }
-  
-  
+    
   vis_df <- binom %>% 
     arrange(groupnum) %>% 
     mutate(phenotypes = rownames(binom) %>% as.numeric,
@@ -137,85 +137,85 @@ for (i_indi in 1:nrow(dat)){
   groupinfo_df$group <- vis_df %>% group_by(group) %>% summarize(groupnum = groupnum[1]) %>% 
     arrange(groupnum) %>% .$group
   
-  # Prepare data for the barchart plot
-  # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
-  tmp_df <- vis_df[which(vis_df$is_highlight == "yes"),]
-  tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
-  colnames(tmpp_df) <- "Groupnum"
-  tmpp_df$num <- table(tmp_df$groupnum) %>% unname
-  ratio_df <- groupinfo_df
-  flag = 0
-  for (j in 1:nrow(groupinfo_df)){
-    if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
-      ratio_df$num[j] <- 0
-      flag = flag + 1
-    } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
-      ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
-    }
-  }
-  colnames(ratio_df)[2] <- "Proportion_abv_thrh"
+  # # Prepare data for the barchart plot
+  # # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
+  # tmp_df <- vis_df[which(vis_df$is_highlight == "yes"),]
+  # tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
+  # colnames(tmpp_df) <- "Groupnum"
+  # tmpp_df$num <- table(tmp_df$groupnum) %>% unname
+  # ratio_df <- groupinfo_df
+  # flag = 0
+  # for (j in 1:nrow(groupinfo_df)){
+  #   if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
+  #     ratio_df$num[j] <- 0
+  #     flag = flag + 1
+  #   } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
+  #     ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
+  #   }
+  # }
+  # colnames(ratio_df)[2] <- "Proportion_abv_thrh"
+  # 
+  # tmp <- c()
+  # for (ele in ratio_df$Proportion_abv_thrh){
+  #   tmp <- c(tmp,percent(ele))
+  # }
+  # 
+  # ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
+  #                                "\nProportion above threshold: ",
+  #                                tmp, sep="")
   
-  tmp <- c()
-  for (ele in ratio_df$Proportion_abv_thrh){
-    tmp <- c(tmp,percent(ele))
-  }
-  
-  ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
-                                 "\nProportion above threshold: ",
-                                 tmp, sep="")
-  
-#   # Plot the barchart  - plot it in Shiny
-#   x = factor(ratio_df$group)   
-#   x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
-  
-#   ratio_p <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
-#     geom_bar(stat="identity",fill = color_vis) + 
-    
-#     ggtitle ("Proportion of phecodes above threshold") +
-#     ylab("Proportion") +
-#     scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
-#     scale_x_discrete(name = "",labels=ratio_df$group) +
-    
-#     theme_bw() + 
-#     theme(
-#       legend.position="none",
-#       panel.border = element_blank(),
-#       panel.grid.major.x = element_blank(),
-#       panel.grid.minor.x = element_blank(),
-#       axis.title.y = element_text(family = "sans",size=8),
-#       axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
-#       plot.title = element_text(family = "sans",size = 10)) 
-  
-#   assign(str_glue("ratio_id{i_indi}"),ratio_p) 
+  # # Plot the barchart   - plot it in Shiny
+  # x = factor(ratio_df$group)   
+  # x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
+  # 
+  # ratio_p <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
+  #   geom_bar(stat="identity",fill = color_vis) + 
+  #   
+  #   ggtitle ("Proportion of phecodes above threshold") +
+  #   ylab("Proportion") +
+  #   scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+  #   scale_x_discrete(name = "",labels=ratio_df$group) +
+  #   
+  #   theme_bw() + 
+  #   theme(
+  #     legend.position="none",
+  #     panel.border = element_blank(),
+  #     panel.grid.major.x = element_blank(),
+  #     panel.grid.minor.x = element_blank(),
+  #     axis.title.y = element_text(family = "sans",size=8),
+  #     axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
+  #     plot.title = element_text(family = "sans",size = 10)) 
+  # 
+  # assign(str_glue("ratio_id{i_indi}"),ratio_p) 
   
   axisdf <- vis_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
   
-#   ## make the manhattan plot  - make it in Shiny
-#   p <- ggplot(vis_df, aes(x = phenotypes, y = map_prob,text = description)) +
-    
-#     # Show all points
-#     geom_point( aes(color=as.factor(groupnum)), alpha=0.25, size=1.2) +
-    
-#     # custom X axis:
-#     scale_x_continuous(label = axisdf$group, breaks = axisdf$center) +
-#     scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
-    
-#     # Add highlighted points
-#     geom_point(data=subset(vis_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
-    
-#     scale_color_manual(values = color_vis) +
-    
-#     # Custom the theme:
-#     theme_bw() +
-#     theme( 
-#       legend.position="none",
-#       panel.border = element_blank(),
-#       panel.grid.major.x = element_blank(),
-#       panel.grid.minor.x = element_blank(),
-#       axis.text.x = element_text(angle = 45, hjust = 1)
-#     )
-  
-#   assign(str_glue("p{i_indi}"),p) 
+  ## make the manhattan plot   - make it in Shiny 
+  # p <- ggplot(vis_df, aes(x = phenotypes, y = map_prob,text = description)) +
+  #   
+  #   # Show all points
+  #   geom_point( aes(color=as.factor(groupnum)), alpha=0.25, size=1.2) +
+  #   
+  #   # custom X axis:
+  #   scale_x_continuous(label = axisdf$group, breaks = axisdf$center) +
+  #   scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
+  #   
+  #   # Add highlighted points
+  #   geom_point(data=subset(vis_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
+  #   
+  #   scale_color_manual(values = color_vis) +
+  #   
+  #   # Custom the theme:
+  #   theme_bw() +
+  #   theme( 
+  #     legend.position="none",
+  #     panel.border = element_blank(),
+  #     panel.grid.major.x = element_blank(),
+  #     panel.grid.minor.x = element_blank(),
+  #     axis.text.x = element_text(angle = 45, hjust = 1)
+  #   )
+  # 
+  # assign(str_glue("p{i_indi}"),p) 
   
   # ggplotly() function returns a plotly object
   # ggplotly(p, tooltip="text")
@@ -231,7 +231,7 @@ for (i_indi in 1:nrow(dat)){
 #############
 # for MS data 
 # read in the MS patient files
-three_ms <- read_csv("data/3_MS_patients.csv")  #,sep=",", header = T, stringsAsFactors = F)
+three_ms <- read_csv("data/3_MS_patients.csv")  
 
 # reformat the file
 three_ms <- three_ms %>% mutate(Encounter = 1)    # easier to plot
@@ -259,8 +259,9 @@ three_ms$StartDate <- as.Date(three_ms$StartDate, "%m/%d/%Y")
 three_ms_vd <- read_csv("data/3_MS_patients_VD.csv")   # 48 5
 three_ms_vd$StartDate <- as.Date(three_ms_vd$StartDate, "%m/%d/%Y")
 
-three_ms_vd$description <- paste0("Patient Number: ",three_ms_vd$PatientNum,
-                                  "\nStart Date: ",three_ms_vd$StartDate, 
+three_ms_vd$description <- paste0("Start Date: ",three_ms_vd$StartDate, 
+                                  "\nPatient Number: ",three_ms_vd$PatientNum,
+                                  "\nCategory: Vitamin D CUI",
                                   "\nVitamin D Value: ",three_ms_vd$Value)
 
 # read in the CUIs lists
@@ -281,10 +282,11 @@ three_mss <- three_mss %>% group_by(Year=floor_date(StartDate, "year"))
 
 three_mss$color <- factor(three_mss$Category, labels = RColorBrewer::brewer.pal(length(unique(three_mss$Category)), name = "Set2"))
 
-# pat_encounter_1 <- which(three_mss$PatientNum == "68286")
-# pat_encounter_2 <- which(three_mss$PatientNum == "99492")
-# pat_encounter_3 <- which(three_mss$PatientNum == "106579")
+pat_encounter_1 <- which(three_mss$PatientNum == "68286")
+pat_encounter_2 <- which(three_mss$PatientNum == "99492")
+pat_encounter_3 <- which(three_mss$PatientNum == "106579")
 choices <- c(68286, 99492, 106579)
+
 
 ###########
 ## Capstone project
@@ -329,7 +331,7 @@ ui <- fluidPage(
                  tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
                  tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
                  tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
-                 
+               
       ),
       
       tabPanel("Word Cloud",
@@ -535,8 +537,8 @@ server <- function(input, output, session) {
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
     word_cl <- vis_df_all[min_sub:max_sub, ] %>% 
-               filter(is_highlight == "yes") %>% 
-               .[,c(7,6)]  #extract columns map_prob and pheno
+      filter(is_highlight == "yes") %>% 
+      .[,c(7,6)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
     
     # the actual word cloud generating function
@@ -552,7 +554,40 @@ server <- function(input, output, session) {
   x = factor(ratio_df$group)   
   x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
   
+  
   output$bar <- renderPlotly({
+    
+    mat <- match(input$individual_id,1:nrow(dat)) 
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    tmp_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
+    
+    # Prepare data for the barchart plot
+    # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
+    tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
+    colnames(tmpp_df) <- "Groupnum"
+    tmpp_df$num <- table(tmp_df$groupnum) %>% unname
+    ratio_df <- groupinfo_df
+    flag = 0
+    for (j in 1:nrow(groupinfo_df)){
+      if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
+        ratio_df$num[j] <- 0
+        flag = flag + 1
+      } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
+        ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
+      }
+    }
+    colnames(ratio_df)[2] <- "Proportion_abv_thrh"
+    
+    tmp <- c()
+    for (ele in ratio_df$Proportion_abv_thrh){
+      tmp <- c(tmp,percent(ele))
+    }
+    
+    ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
+                                   "\nProportion above threshold: ",
+                                   tmp, sep="")
+    
     tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
       geom_bar(stat="identity",fill = color_vis) + 
       
