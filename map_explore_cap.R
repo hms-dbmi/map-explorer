@@ -291,7 +291,6 @@ choices <- unique(three_mss$PatientNum)
 ## Capstone project
 # shiny app
 
-
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
   
@@ -356,17 +355,18 @@ ui <- fluidPage(
                br(),
                plotlyOutput("dat_daily", height = 300)
       ),
-      tabPanel("VD",
-               h3("Vitamin D Levels"),
-               selectInput(inputId="patient_vd_num",
-                           label="Select Patient Number: ",
-                           choices=choices, 
-                           selected = 1,
-                           width = "30%"), # modify the size of the input box
-               br(),
-               plotlyOutput("vitd"),
-               br(),
-               plotlyOutput("all_six", height = 600))
+      tabPanel("VD"  #,
+               # h3("Vitamin D Levels"),
+               # selectInput(inputId="patient_vd_num",
+               #             label="Select Patient Number: ",
+               #             choices=choices, 
+               #             selected = 1,
+               #             width = "30%"), # modify the size of the input box
+               # br(),
+               # plotlyOutput("vitd"),
+               # br(),
+               # plotlyOutput("all_six", height = 600)) 
+      )
     ) # for tabsetPanel
     
   )) # ")" for mainPanel & fluidPage
@@ -638,12 +638,12 @@ server <- function(input, output, session) {
     paste("The total number of phecodes that are above their corresponding threshold is",
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
-
+  
   # Show the result in the DT table                        
   output$panel <- DT::renderDT({
     
     lasso <- event_data("plotly_relayout")
-
+    
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
@@ -674,7 +674,10 @@ server <- function(input, output, session) {
     
     # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
     datatable(sub_df %>% arrange(cl,desc(MAP_prob)),
-              options = list(pageLength = 6)) %>%    # each time shows only 6 rows in the output table
+              options = list(pageLength = 6),   # each time shows only 6 rows in the output table
+              callback = JS("table.on('click.dt', 'td', function() {
+                            Shiny.onInputChange('click', Math.random());
+  });")) %>%    
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -701,6 +704,30 @@ server <- function(input, output, session) {
     
     paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
     
+  })
+  
+  
+  # define modal
+  plotModal <- function() {
+    modalDialog(
+      h3("Vitamin D Levels"),
+      selectInput(inputId="patient_vd_num",
+                  label="Select Patient Number: ",
+                  choices=choices, 
+                  selected = 1,
+                  width = "30%"), # modify the size of the input box
+      br(),
+      plotlyOutput("vitd"),
+      br(),
+      plotlyOutput("all_six", height = 600),
+      size = "l",
+      easyClose = T # the modal dialog can be dismissed by clicking outside the dialog box, or be pressing the Escape key
+    )
+  }
+  
+  observeEvent(input$click, {
+    removeModal()
+    showModal(plotModal())
   })
   
   # For VD tabset
