@@ -13,7 +13,7 @@ library(scales)
 library(readr)
 library(lubridate)
 
-# for plotting
+# for Shiny
 library(shiny)
 library(shinyjs)
 library(DT)
@@ -109,7 +109,6 @@ for (i_indi in 1:nrow(dat)){
     which_row <- match(phe_man_indiv1$phecode[i], MAPcutoff_filteredNA$phecode)
     if (phe_man_indiv1$map_prob[which_row] > MAPcutoff_filteredNA$cutoff[which_row]) {
       sig_list <- c(sig_list,phe_man_indiv1$phecode[which_row])
-      # print(which_row)
     }
   }
   
@@ -326,7 +325,7 @@ ui <- fluidPage(
                  textOutput("cond_num"),     #report number of phecodes above threshold
                  textOutput("brush"),        #report number of phecodes both above threshold and selected
                  br(),
-                 radioButtons("details", "More details (with MAP cutoff):", choices=c("Yes","No"), selected = "No"),
+                 checkboxInput("details","More details (with MAP cutoff):",FALSE),
                  DT::DTOutput("panel"),
                  tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
                  tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
@@ -639,7 +638,6 @@ server <- function(input, output, session) {
     paste("The total number of phecodes that are above their corresponding threshold is",
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
-  
 
   # Show the result in the DT table                        
   output$panel <- DT::renderDT({
@@ -659,7 +657,7 @@ server <- function(input, output, session) {
                                     map_prob >= y.min & map_prob <= y.max)
     }
     
-    if(input$details == "Yes"){
+    if(input$details == "TRUE"){
       sub_df <- data.frame(Phecodes = sub_df$phecode, 
                            Group = sub_df$group,
                            cl = sub_df$groupnum,
@@ -787,5 +785,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
 
