@@ -343,30 +343,39 @@ ui <- fluidPage(
       ),
       tabPanel("MS",
                h3("MS Data Overview"),
-               selectInput(inputId="patient_num",
-                           label="Select Patient Number: ",
-                           choices=choices, 
-                           selected = 1,
-                           width = "30%"), # modify the size of the input box
-               br(),
+               column(width = 6,
+                      selectInput(inputId="patient_num",
+                                  label="Select Patient Number: ",
+                                  choices=choices, 
+                                  selected = 1)), # modify the size of the input box
+               column(width = 6,
+                      selectInput(inputId="enco_type",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
                plotlyOutput("dat_year", height = 300),
                br(),
                plotlyOutput("dat_month", height = 300),
                br(),
                plotlyOutput("dat_daily", height = 300)
       ),
-      tabPanel("VD"  #,
-               # h3("Vitamin D Levels"),
-               # selectInput(inputId="patient_vd_num",
-               #             label="Select Patient Number: ",
-               #             choices=choices, 
-               #             selected = 1,
-               #             width = "30%"), # modify the size of the input box
-               # br(),
-               # plotlyOutput("vitd"),
-               # br(),
-               # plotlyOutput("all_six", height = 600)) 
-      )
+      tabPanel("VD",
+               h3("Vitamin D Levels"),
+               column(width = 6,
+                      selectInput(inputId="patient_vd_num",
+                                  label="Select Patient Number: ",
+                                  choices=choices, 
+                                  selected = 1)), # modify the size of the input box
+               column(width = 6,
+                      selectInput(inputId="enco_vd_type",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
+               plotlyOutput("all_six", height = 600),
+               br(),
+               plotlyOutput("vitd"))
     ) # for tabsetPanel
     
   )) # ")" for mainPanel & fluidPage
@@ -399,100 +408,107 @@ server <- function(input, output, session) {
     dat_daily(NULL)
   })
   
-  ####note: try to highlight only the clicked/selected bar; why with 'if' statement, it works.
-  # there are some issue in 'if' statement, if keep clicking on the barchart on the same year, there would be mistakes
+
+ observeEvent(input$enco_type,{
+   output$dat_year <- renderPlotly({
+     
+     id <- match(input$patient_num, choices)
+     pat_encounter <- which(three_mss$PatientNum == choices[id])
+     
+     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+
+     select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
+     
+     sd1 <- SharedData$new(select_df)
+     # sd1 <- SharedData$new(three_mss[pat_encounter,])
+     
+     pc <- sd1 %>%
+       plot_ly(source = "dat_year", name =~Category, # name of the legend
+               x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
+               text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
+       #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+       layout(barmode='stack', title = "Encounters Aggregated by Year",
+              yaxis=list(title='Encounters', visible=T), 
+              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+     
+     
+     if (is.null(dat_year())) {
+       pic_year <<- pc
+       return(pic_year) 
+     } 
+     pc 
+     # bscols(
+     #   widths=c(3,NA),
+     #   list(
+     #     filter_checkbox('category', 'Category', sd1, ~Category, inline=F)
+     #   ),
+     #   pc)
+   })
+   
+   output$dat_month <- renderPlotly({
+     if (is.null(dat_year())) return(NULL)
+     
+     id <- match(input$patient_num, choices)
+     pat_encounter <- which(three_mss$PatientNum == choices[id])
+     
+     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+     
+     
+     sd <- three_mss[pat_encounter,] %>% 
+       filter(Year == dat_year(), Category %in% keep_category)
+     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
+     sd2 <- SharedData$new(sd)
+     pc <- sd2 %>%
+       plot_ly(source = "dat_month", name =~Category,
+               text=~Description, hoverinfo="text") %>% 
+       suppressWarnings %>%
+       add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
+       layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
+              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
+     
+     if (is.null(dat_month())) {
+       pic_month <<- pc
+       return(pic_month)
+     }
+     pc
+   })
+   
+   output$dat_daily <- renderPlotly({
+     if (is.null(dat_month())) return(NULL)
+     
+     id <- match(input$patient_num, choices)
+     pat_encounter <- which(three_mss$PatientNum == choices[id])
+     
+     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+     
+     sd <- three_mss[pat_encounter,] %>% 
+       filter(Month == dat_month(), Category %in% keep_category)
+     mmonth <- sd$Month[1] %>% substr(1, 7)
+     sd3 <- SharedData$new(sd)
+     pc <- sd3 %>%
+       plot_ly(source = "dat_daily", name =~Category,
+               text=~Description, hoverinfo="text") %>% 
+       add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
+       layout(barmode='stack', title = paste0("Encounters by Day (Month ", mmonth,")"),
+              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
+     
+     if (is.null(dat_daily())) {
+       pic_daily <<- pc
+       return(pic_daily)
+     }
+     pc
+   })
+   
+ }) 
   
-  output$dat_year <- renderPlotly({
-    
-    id <- match(input$patient_num, choices)
-    pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
-    if (!is.null(dat_year())) {
-      selected_df <- three_mss[pat_encounter,] %>% mutate(opacity = ifelse(dat_year() == Year,1,0.2))
-    } else{
-      selected_df <- three_mss[pat_encounter,] %>% mutate(opacity = 1)
-    }
-    
-    sd1 <- SharedData$new(selected_df)
-    # sd1 <- SharedData$new(three_mss[pat_encounter,])
-    
-    pc <- sd1 %>%
-      plot_ly(source = "dat_year", name =~Category, # name of the legend
-              x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
-              text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
-      #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-      layout(barmode='stack', title = "Encounters Aggregated by Year",
-             yaxis=list(title='Encounters', visible=T), 
-             xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
-    
-    
-    if (is.null(dat_year())) {
-      pic_year <<- pc
-      return(pic_year) 
-    } 
-    pc 
-    # bscols(
-    #   widths=c(3,NA),
-    #   list(
-    #     filter_checkbox('category', 'Category', sd1, ~Category, inline=F)
-    #   ),
-    #   pc)
-  })
-  
-  output$dat_month <- renderPlotly({
-    if (is.null(dat_year())) return(NULL)
-    
-    id <- match(input$patient_num, choices)
-    pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
-    sd <- three_mss[pat_encounter,] %>% 
-      filter(Year == dat_year())
-    yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
-    sd2 <- SharedData$new(sd)
-    pc <- sd2 %>%
-      plot_ly(source = "dat_month", name =~Category,
-              text=~Description, hoverinfo="text") %>% 
-      suppressWarnings %>%
-      add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
-      layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
-             yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
-    
-    if (is.null(dat_month())) {
-      pic_month <<- pc
-      return(pic_month)
-    }
-    pc
-  })
-  
-  output$dat_daily <- renderPlotly({
-    if (is.null(dat_month())) return(NULL)
-    
-    id <- match(input$patient_num, choices)
-    pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
-    sd <- three_mss[pat_encounter,] %>% 
-      filter(Month == dat_month())
-    mmonth <- sd$Month[1] %>% substr(1, 7)
-    sd3 <- SharedData$new(sd)
-    pc <- sd3 %>%
-      plot_ly(source = "dat_daily", name =~Category,
-              text=~Description, hoverinfo="text") %>% 
-      add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
-      layout(barmode='stack', title = paste0("Encounters by Day (Month ", mmonth,")"),
-             yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
-    
-    if (is.null(dat_daily())) {
-      pic_daily <<- pc
-      return(pic_daily)
-    }
-    pc
-  })
-  
-  
+
   # For MAIN tabset
   ####################
   # the Manhattan plot
   output$plot <- renderPlotly({
+    
+    # try to fix the source problem
+   #  print(event_data("plotly_click")$x)
     
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
@@ -613,9 +629,9 @@ server <- function(input, output, session) {
         panel.border = element_blank(),
         panel.grid.major.x = element_blank(),
         panel.grid.minor.x = element_blank(),
-        axis.title.y = element_text(family = "sans",size=8),
-        axis.text.x = element_text(family = "sans", angle = 45, hjust = 1, size = 6.5),
-        plot.title = element_text(family = "sans",size = 10)) 
+        axis.title.y = element_text(size=8),   # family = "sans",
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+        plot.title = element_text(size = 8)) 
     
     ggplotly(tmp,tooltip="text")
     # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
@@ -638,12 +654,12 @@ server <- function(input, output, session) {
     paste("The total number of phecodes that are above their corresponding threshold is",
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
-  
+
   # Show the result in the DT table                        
   output$panel <- DT::renderDT({
     
     lasso <- event_data("plotly_relayout")
-    
+
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
@@ -657,27 +673,27 @@ server <- function(input, output, session) {
                                     map_prob >= y.min & map_prob <= y.max)
     }
     
+    sub_df$phecode_pheno <- paste0(sub_df$pheno, " [", sub_df$phecode, "]")
+    
     if(input$details == "TRUE"){
-      sub_df <- data.frame(Phecodes = sub_df$phecode, 
+      sub_df <- data.frame(# Phecodes = sub_df$phecode, 
                            Group = sub_df$group,
                            cl = sub_df$groupnum,
-                           Phenotype = sub_df$pheno,
+                           Phenotype = sub_df$phecode_pheno,
                            MAP_prob = sub_df$map_prob %>% round(4),
                            MAP_cutoff = sub_df$cutoff %>% round(4))
     } else{
-      sub_df <- data.frame(Phecodes = sub_df$phecode, 
+      sub_df <- data.frame(# Phecodes = sub_df$phecode, 
                            Group = sub_df$group,
                            cl = sub_df$groupnum,
-                           Phenotype = sub_df$pheno,
+                           Phenotype = sub_df$phecode_pheno,
                            MAP_prob = sub_df$map_prob %>% round(4)) 
     }
+    names(sub_df)[c(1,3,4)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability")
     
     # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
-    datatable(sub_df %>% arrange(cl,desc(MAP_prob)),
-              options = list(pageLength = 6),   # each time shows only 6 rows in the output table
-              callback = JS("table.on('click.dt', 'td', function() {
-                            Shiny.onInputChange('click', Math.random());
-  });")) %>%    
+    datatable(sub_df %>% arrange(desc(`Map Probability`),cl),
+              options = list(pageLength = 6)) %>%    # each time shows only 6 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -704,30 +720,6 @@ server <- function(input, output, session) {
     
     paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
     
-  })
-  
-  
-  # define modal
-  plotModal <- function() {
-    modalDialog(
-      h3("Vitamin D Levels"),
-      selectInput(inputId="patient_vd_num",
-                  label="Select Patient Number: ",
-                  choices=choices, 
-                  selected = 1,
-                  width = "30%"), # modify the size of the input box
-      br(),
-      plotlyOutput("vitd"),
-      br(),
-      plotlyOutput("all_six", height = 600),
-      size = "l",
-      easyClose = T # the modal dialog can be dismissed by clicking outside the dialog box, or be pressing the Escape key
-    )
-  }
-  
-  observeEvent(input$click, {
-    removeModal()
-    showModal(plotModal())
   })
   
   # For VD tabset
@@ -769,7 +761,7 @@ server <- function(input, output, session) {
     
   })
   
-  
+observeEvent(input$enco_vd_type,{
   output$all_six <- renderPlotly({
     
     ay <- list(               # set up for the yaxis
@@ -783,14 +775,15 @@ server <- function(input, output, session) {
       #title='Encounters'
     )
     
-    
     id <- match(input$patient_vd_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
     
+    keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_vd_type]
     
     sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
+      filter(Category %in% keep_category) %>%
       transform(id = as.integer(factor(Category))) %>%
-      arrange(id) #%>% mutate(width=0.01)
+      arrange(id) 
     
     pc <- sd1 %>%
       plot_ly(name =~Category,
@@ -808,6 +801,9 @@ server <- function(input, output, session) {
     
     pc
   })
+  
+})
+  
   
 }
 
