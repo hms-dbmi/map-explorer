@@ -187,7 +187,8 @@ for (i_indi in 1:nrow(dat)){
   # 
   # assign(str_glue("ratio_id{i_indi}"),ratio_p) 
   
-  axisdf <- vis_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
+  # !!!! Indexed on June 15
+  # axisdf <- vis_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
   
   ## make the manhattan plot   - make it in Shiny 
   # p <- ggplot(vis_df, aes(x = phenotypes, y = map_prob,text = description)) +
@@ -291,6 +292,8 @@ choices <- unique(three_mss$PatientNum)
 ## Capstone project
 # shiny app
 
+bar_order <- 0
+
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
   
@@ -317,19 +320,31 @@ ui <- fluidPage(
       tabPanel("Main",
                h3("MAP Manhattan Plot"),
                fluidRow(
-                 plotlyOutput("plot",height = 500),
-                 br(),
-                 textOutput("sig_tab"),
-                 br(),
-                 textOutput("cond_num"),     #report number of phecodes above threshold
-                 textOutput("brush"),        #report number of phecodes both above threshold and selected
-                 br(),
-                 checkboxInput("details","More details (with MAP cutoff):",FALSE),
-                 DT::DTOutput("panel"),
-                 tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-                 tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-                 tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
+                 plotlyOutput("plot",height = 500))
+               # br(),
+               # textOutput("sig_tab"),
+               # br(),
+               # textOutput("cond_num"),     #report number of phecodes above threshold
+               # textOutput("brush"),        #report number of phecodes both above threshold and selected
+               # br(),
+               # checkboxInput("details","More details (with MAP cutoff):",FALSE),
+               # DT::DTOutput("panel"),
+               # tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+               # tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+               # tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
                
+      ),
+      tabPanel("Info Table",
+               textOutput("sig_tab"),
+               br(),
+               textOutput("cond_num"),     #report number of phecodes above threshold
+               textOutput("brush"),        #report number of phecodes both above threshold and selected
+               br(),
+               checkboxInput("details","More details (with MAP cutoff):",FALSE),
+               DT::DTOutput("panel"),
+               tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+               tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+               tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))
       ),
       
       tabPanel("Word Cloud",
@@ -341,7 +356,7 @@ ui <- fluidPage(
                deliverChart(div_id = "wordcloud")
                
       ),
-      tabPanel("MS",
+      tabPanel("Detailed Evidence",
                h3("MS Data Overview"),
                column(width = 6,
                       selectInput(inputId="patient_num",
@@ -360,8 +375,8 @@ ui <- fluidPage(
                br(),
                plotlyOutput("dat_daily", height = 300)
       ),
-      tabPanel("VD",
-               h3("Vitamin D Levels"),
+      tabPanel("Detailed Evidence II",
+               h3("MS Data Overview"),
                column(width = 6,
                       selectInput(inputId="patient_vd_num",
                                   label="Select Patient Number: ",
@@ -375,6 +390,7 @@ ui <- fluidPage(
                br(), br(), br(), br(), br(), br(), br(),
                plotlyOutput("all_six", height = 600),
                br(),
+               h3("Vitamin D Levels"),
                plotlyOutput("vitd"))
     ) # for tabsetPanel
     
@@ -408,114 +424,193 @@ server <- function(input, output, session) {
     dat_daily(NULL)
   })
   
-
- observeEvent(input$enco_type,{
-   output$dat_year <- renderPlotly({
-     
-     id <- match(input$patient_num, choices)
-     pat_encounter <- which(three_mss$PatientNum == choices[id])
-     
-     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
-
-     select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
-     
-     sd1 <- SharedData$new(select_df)
-     # sd1 <- SharedData$new(three_mss[pat_encounter,])
-     
-     pc <- sd1 %>%
-       plot_ly(source = "dat_year", name =~Category, # name of the legend
-               x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
-               text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
-       #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-       layout(barmode='stack', title = "Encounters Aggregated by Year",
-              yaxis=list(title='Encounters', visible=T), 
-              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
-     
-     
-     if (is.null(dat_year())) {
-       pic_year <<- pc
-       return(pic_year) 
-     } 
-     pc 
-     # bscols(
-     #   widths=c(3,NA),
-     #   list(
-     #     filter_checkbox('category', 'Category', sd1, ~Category, inline=F)
-     #   ),
-     #   pc)
-   })
-   
-   output$dat_month <- renderPlotly({
-     if (is.null(dat_year())) return(NULL)
-     
-     id <- match(input$patient_num, choices)
-     pat_encounter <- which(three_mss$PatientNum == choices[id])
-     
-     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
-     
-     
-     sd <- three_mss[pat_encounter,] %>% 
-       filter(Year == dat_year(), Category %in% keep_category)
-     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
-     sd2 <- SharedData$new(sd)
-     pc <- sd2 %>%
-       plot_ly(source = "dat_month", name =~Category,
-               text=~Description, hoverinfo="text") %>% 
-       suppressWarnings %>%
-       add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
-       layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
-              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
-     
-     if (is.null(dat_month())) {
-       pic_month <<- pc
-       return(pic_month)
-     }
-     pc
-   })
-   
-   output$dat_daily <- renderPlotly({
-     if (is.null(dat_month())) return(NULL)
-     
-     id <- match(input$patient_num, choices)
-     pat_encounter <- which(three_mss$PatientNum == choices[id])
-     
-     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
-     
-     sd <- three_mss[pat_encounter,] %>% 
-       filter(Month == dat_month(), Category %in% keep_category)
-     mmonth <- sd$Month[1] %>% substr(1, 7)
-     sd3 <- SharedData$new(sd)
-     pc <- sd3 %>%
-       plot_ly(source = "dat_daily", name =~Category,
-               text=~Description, hoverinfo="text") %>% 
-       add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
-       layout(barmode='stack', title = paste0("Encounters by Day (Month ", mmonth,")"),
-              yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
-     
-     if (is.null(dat_daily())) {
-       pic_daily <<- pc
-       return(pic_daily)
-     }
-     pc
-   })
-   
- }) 
   
-
+  observeEvent(input$enco_type,{
+    output$dat_year <- renderPlotly({
+      
+      id <- match(input$patient_num, choices)
+      pat_encounter <- which(three_mss$PatientNum == choices[id])
+      
+      keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+      
+      select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
+      
+      sd1 <- SharedData$new(select_df)
+      # sd1 <- SharedData$new(three_mss[pat_encounter,])
+      
+      pc <- sd1 %>%
+        plot_ly(source = "dat_year", name =~Category, # name of the legend
+                x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
+                text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
+        #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+        layout(barmode='stack', title = "Encounters Aggregated by Year",
+               yaxis=list(title='Encounters', visible=T), 
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+      
+      
+      if (is.null(dat_year())) {
+        pic_year <<- pc
+        return(pic_year) 
+      } 
+      pc 
+      # bscols(
+      #   widths=c(3,NA),
+      #   list(
+      #     filter_checkbox('category', 'Category', sd1, ~Category, inline=F)
+      #   ),
+      #   pc)
+    })
+    
+    output$dat_month <- renderPlotly({
+      if (is.null(dat_year())) return(NULL)
+      
+      id <- match(input$patient_num, choices)
+      pat_encounter <- which(three_mss$PatientNum == choices[id])
+      
+      keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+      
+      
+      sd <- three_mss[pat_encounter,] %>% 
+        filter(Year == dat_year(), Category %in% keep_category)
+      yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
+      sd2 <- SharedData$new(sd)
+      pc <- sd2 %>%
+        plot_ly(source = "dat_month", name =~Category,
+                text=~Description, hoverinfo="text") %>% 
+        suppressWarnings %>%
+        add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
+        layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
+               yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
+      
+      if (is.null(dat_month())) {
+        pic_month <<- pc
+        return(pic_month)
+      }
+      pc
+    })
+    
+    output$dat_daily <- renderPlotly({
+      if (is.null(dat_month())) return(NULL)
+      
+      id <- match(input$patient_num, choices)
+      pat_encounter <- which(three_mss$PatientNum == choices[id])
+      
+      keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+      
+      sd <- three_mss[pat_encounter,] %>% 
+        filter(Month == dat_month(), Category %in% keep_category)
+      mmonth <- sd$Month[1] %>% substr(1, 7)
+      sd3 <- SharedData$new(sd)
+      pc <- sd3 %>%
+        plot_ly(source = "dat_daily", name =~Category,
+                text=~Description, hoverinfo="text") %>% 
+        add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
+        layout(barmode='stack', title = paste0("Encounters by Day (Month ", mmonth,")"),
+               yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
+      
+      if (is.null(dat_daily())) {
+        pic_daily <<- pc
+        return(pic_daily)
+      }
+      pc
+    })
+    
+  }) 
+  
+  
+  ###############
+  # the bar chart
+  x = factor(ratio_df$group)   
+  x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
+  
+  
+  output$bar <- renderPlotly({
+    
+    mat <- match(input$individual_id,1:nrow(dat)) 
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    tmp_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
+    
+    # Prepare data for the barchart plot
+    # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
+    tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
+    colnames(tmpp_df) <- "Groupnum"
+    tmpp_df$num <- table(tmp_df$groupnum) %>% unname
+    ratio_df <- groupinfo_df
+    flag = 0
+    for (j in 1:nrow(groupinfo_df)){
+      if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
+        ratio_df$num[j] <- 0
+        flag = flag + 1
+      } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
+        ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
+      }
+    }
+    colnames(ratio_df)[2] <- "Proportion_abv_thrh"
+    
+    tmp <- c()
+    for (ele in ratio_df$Proportion_abv_thrh){
+      tmp <- c(tmp,percent(ele))
+    }
+    
+    ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
+                                   "\nProportion above threshold: ",
+                                   tmp, sep="")
+    
+    # Reordering the bar charts by proportion that is above threshold
+    ratio_df <- ratio_df %>% mutate(color = color_vis) %>% arrange(desc(Proportion_abv_thrh)) 
+    
+    bar_order <<- ratio_df %>% .$Groupnum
+    
+    tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
+      geom_bar(stat="identity",fill = ratio_df$color) +
+      
+      ggtitle ("Proportion of phecodes above threshold") +
+      ylab("Proportion") +
+      scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+      scale_x_discrete(name = "", labels=ratio_df$group) +
+      
+      theme_bw() + 
+      theme(
+        legend.position="none",
+        panel.border = element_blank(),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.title.y = element_text(size=8),   # family = "sans",
+        axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+        plot.title = element_text(size = 8)) 
+    
+    ggplotly(tmp,tooltip="text")
+    # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
+    
+  })
+  
   # For MAIN tabset
   ####################
   # the Manhattan plot
   output$plot <- renderPlotly({
     
     # try to fix the source problem
-   #  print(event_data("plotly_click")$x)
+    #  print(event_data("plotly_click")$x)
     
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
     sub_df <- vis_df_all[min_sub:max_sub, ]
     
-    tmp <- ggplot(sub_df, aes(x = phenotypes, y = map_prob,text = description)) +
+    man_df <- tibble()
+    for (ele in bar_order){
+      df <- sub_df[sub_df$groupnum == ele,]
+      man_df <- rbind(man_df,df)  
+    }
+    
+    man_df$phenotypes <- 1:nrow(man_df)
+    print(tail(man_df))
+    subman_df <- subset(man_df, is_highlight=="yes")
+    
+    axisdf <- man_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
+    
+    tmp <- ggplot(man_df, aes(x = phenotypes, y = map_prob,text = description)) +
       
       # Show all points
       geom_point( aes(color=as.factor(groupnum)), alpha=0.25, size=1.2) +
@@ -525,7 +620,7 @@ server <- function(input, output, session) {
       scale_y_continuous(name = "MAP Probabilities",expand = c(0, 0),limits = c(0,1.1), breaks = c(0,0.25,0.5,0.75,1)) +     # remove space between plot area and x axis
       
       # Add highlighted points
-      geom_point(data=subset(sub_df, is_highlight=="yes"), aes(color=as.factor(groupnum))) +
+      geom_point(data=subman_df, aes(color=as.factor(groupnum))) +
       
       scale_color_manual(values = color_vis) +
       
@@ -576,68 +671,6 @@ server <- function(input, output, session) {
   })
   
   
-  ###############
-  # the bar chart
-  x = factor(ratio_df$group)   
-  x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
-  
-  
-  output$bar <- renderPlotly({
-    
-    mat <- match(input$individual_id,1:nrow(dat)) 
-    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
-    max_sub <- nrow(vis_df)*mat  
-    tmp_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
-    
-    # Prepare data for the barchart plot
-    # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
-    tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
-    colnames(tmpp_df) <- "Groupnum"
-    tmpp_df$num <- table(tmp_df$groupnum) %>% unname
-    ratio_df <- groupinfo_df
-    flag = 0
-    for (j in 1:nrow(groupinfo_df)){
-      if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
-        ratio_df$num[j] <- 0
-        flag = flag + 1
-      } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
-        ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
-      }
-    }
-    colnames(ratio_df)[2] <- "Proportion_abv_thrh"
-    
-    tmp <- c()
-    for (ele in ratio_df$Proportion_abv_thrh){
-      tmp <- c(tmp,percent(ele))
-    }
-    
-    ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
-                                   "\nProportion above threshold: ",
-                                   tmp, sep="")
-    
-    tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
-      geom_bar(stat="identity",fill = color_vis) + 
-      
-      ggtitle ("Proportion of phecodes above threshold") +
-      ylab("Proportion") +
-      scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
-      scale_x_discrete(name = "", labels=ratio_df$group) +
-      
-      theme_bw() + 
-      theme(
-        legend.position="none",
-        panel.border = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        axis.title.y = element_text(size=8),   # family = "sans",
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
-        plot.title = element_text(size = 8)) 
-    
-    ggplotly(tmp,tooltip="text")
-    # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
-    
-  })
-  
   # For Info Table 
   ####################
   output$sig_tab <- renderText({
@@ -654,12 +687,12 @@ server <- function(input, output, session) {
     paste("The total number of phecodes that are above their corresponding threshold is",
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
-
+  
   # Show the result in the DT table                        
   output$panel <- DT::renderDT({
     
     lasso <- event_data("plotly_relayout")
-
+    
     mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
@@ -677,23 +710,23 @@ server <- function(input, output, session) {
     
     if(input$details == "TRUE"){
       sub_df <- data.frame(# Phecodes = sub_df$phecode, 
-                           Group = sub_df$group,
-                           cl = sub_df$groupnum,
-                           Phenotype = sub_df$phecode_pheno,
-                           MAP_prob = sub_df$map_prob %>% round(4),
-                           MAP_cutoff = sub_df$cutoff %>% round(4))
+        Group = sub_df$group,
+        cl = sub_df$groupnum,
+        Phenotype = sub_df$phecode_pheno,
+        MAP_prob = sub_df$map_prob %>% round(4),
+        MAP_cutoff = sub_df$cutoff %>% round(4))
     } else{
       sub_df <- data.frame(# Phecodes = sub_df$phecode, 
-                           Group = sub_df$group,
-                           cl = sub_df$groupnum,
-                           Phenotype = sub_df$phecode_pheno,
-                           MAP_prob = sub_df$map_prob %>% round(4)) 
+        Group = sub_df$group,
+        cl = sub_df$groupnum,
+        Phenotype = sub_df$phecode_pheno,
+        MAP_prob = sub_df$map_prob %>% round(4)) 
     }
     names(sub_df)[c(1,3,4)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability")
     
     # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
     datatable(sub_df %>% arrange(desc(`Map Probability`),cl),
-              options = list(pageLength = 6)) %>%    # each time shows only 6 rows in the output table
+              options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -761,48 +794,48 @@ server <- function(input, output, session) {
     
   })
   
-observeEvent(input$enco_vd_type,{
-  output$all_six <- renderPlotly({
+  observeEvent(input$enco_vd_type,{
+    output$all_six <- renderPlotly({
+      
+      ay <- list(               # set up for the yaxis
+        autotick = FALSE,
+        ticks = "outside",
+        tick0 = 0,
+        dtick = 1,
+        ticklen = 1,
+        tickwidth = 1,
+        tickcolor = toRGB("grey")
+        #title='Encounters'
+      )
+      
+      id <- match(input$patient_vd_num, choices)
+      pat_encounter <- which(three_mss$PatientNum == choices[id])
+      
+      keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_vd_type]
+      
+      sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
+        filter(Category %in% keep_category) %>%
+        transform(id = as.integer(factor(Category))) %>%
+        arrange(id) 
+      
+      pc <- sd1 %>%
+        plot_ly(name =~Category,
+                x = ~StartDate, y = ~Encounter, color=~color,
+                text=~Description, hoverinfo="text",
+                yaxis = ~paste0("y", id)) %>%
+        # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
+        add_bars(width=1000*3600*30) %>%    # set consistent bar width
+        layout(title = "Encounters by Day",
+               bargap = 0.05,   # set bar gap
+               yaxis=ay,
+               xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
+        subplot(nrows = 6, shareX = TRUE,
+                margin = 0.03) 
+      
+      pc
+    })
     
-    ay <- list(               # set up for the yaxis
-      autotick = FALSE,
-      ticks = "outside",
-      tick0 = 0,
-      dtick = 1,
-      ticklen = 1,
-      tickwidth = 1,
-      tickcolor = toRGB("grey")
-      #title='Encounters'
-    )
-    
-    id <- match(input$patient_vd_num, choices)
-    pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
-    keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_vd_type]
-    
-    sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
-      filter(Category %in% keep_category) %>%
-      transform(id = as.integer(factor(Category))) %>%
-      arrange(id) 
-    
-    pc <- sd1 %>%
-      plot_ly(name =~Category,
-              x = ~StartDate, y = ~Encounter, color=~color,
-              text=~Description, hoverinfo="text",
-              yaxis = ~paste0("y", id)) %>%
-      # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
-      add_bars(width=1000*3600*30) %>%    # set consistent bar width
-      layout(title = "Encounters by Day",
-             bargap = 0.05,   # set bar gap
-             yaxis=ay,
-             xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
-      subplot(nrows = 6, shareX = TRUE,
-              margin = 0.03) 
-    
-    pc
   })
-  
-})
   
   
 }
