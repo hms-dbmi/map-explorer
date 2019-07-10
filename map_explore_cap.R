@@ -26,10 +26,13 @@ library(ECharts2Shiny)
 # Read in the data
 
 # `dat` contains the MAP probabilities for each individual patient across all diseases
-setwd("~/Desktop/capstone")
+setwd("~/Desktop/Capstone")
 load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
 load("data/MAPcutoff.Rdata")       # 1866    2
 load("data/pheinfo.rda")           # 1814    5
+
+load("data/sample_PheMAP.Rdata")   # dataset updated 07/09/2019. name: df, 1864*8
+
 
 phe_man <- colnames(dat)               # 1864, with 2 columns already filtered by Luwan; 
 # the corresponding MAPcutoff for these two phecodes are NAs
@@ -138,30 +141,30 @@ for (i_indi in 1:nrow(dat)){
   
   # # Prepare data for the barchart plot
   # # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
-  # tmp_df <- vis_df[which(vis_df$is_highlight == "yes"),]
-  # tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
-  # colnames(tmpp_df) <- "Groupnum"
-  # tmpp_df$num <- table(tmp_df$groupnum) %>% unname
-  # ratio_df <- groupinfo_df
-  # flag = 0
-  # for (j in 1:nrow(groupinfo_df)){
-  #   if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
-  #     ratio_df$num[j] <- 0
-  #     flag = flag + 1
-  #   } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
-  #     ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
-  #   }
-  # }
-  # colnames(ratio_df)[2] <- "Proportion_abv_thrh"
-  # 
-  # tmp <- c()
-  # for (ele in ratio_df$Proportion_abv_thrh){
-  #   tmp <- c(tmp,percent(ele))
-  # }
-  # 
-  # ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
-  #                                "\nProportion above threshold: ",
-  #                                tmp, sep="")
+  tmp_df <- vis_df[which(vis_df$is_highlight == "yes"),]
+  tmpp_df <- table(tmp_df$groupnum) %>% names %>% as.data.frame
+  colnames(tmpp_df) <- "Groupnum"
+  tmpp_df$num <- table(tmp_df$groupnum) %>% unname
+  ratio_df <- groupinfo_df
+  flag = 0
+  for (j in 1:nrow(groupinfo_df)){
+    if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
+      ratio_df$num[j] <- 0
+      flag = flag + 1
+    } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
+      ratio_df$num[j] <- tmpp_df$num[j-flag]/groupinfo_df$num[j]
+    }
+  }
+  colnames(ratio_df)[2] <- "Proportion_abv_thrh"
+
+  tmp <- c()
+  for (ele in ratio_df$Proportion_abv_thrh){
+    tmp <- c(tmp,percent(ele))
+  }
+
+  ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
+                                 "\nProportion above threshold: ",
+                                 tmp, sep="")
   
   # # Plot the barchart   - plot it in Shiny
   # x = factor(ratio_df$group)   
@@ -523,7 +526,6 @@ server <- function(input, output, session) {
   x = factor(ratio_df$group)   
   x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
   
-  
   output$bar <- renderPlotly({
     
     mat <- match(input$individual_id,1:nrow(dat)) 
@@ -605,7 +607,6 @@ server <- function(input, output, session) {
     }
     
     man_df$phenotypes <- 1:nrow(man_df)
-    print(tail(man_df))
     subman_df <- subset(man_df, is_highlight=="yes")
     
     axisdf <- man_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
@@ -724,7 +725,7 @@ server <- function(input, output, session) {
     }
     names(sub_df)[c(1,3,4)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability")
     
-    # Sort the table first by category then by MAP probabilities (only showing the “Yes” phenotypes)
+    # Sort the table first by MAP probabilities then by category (only showing the “Yes” phenotypes)
     datatable(sub_df %>% arrange(desc(`Map Probability`),cl),
               options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
