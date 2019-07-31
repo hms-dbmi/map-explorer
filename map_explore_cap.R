@@ -31,25 +31,29 @@ load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864;
 load("data/MAPcutoff.Rdata")       # 1866    2
 load("data/pheinfo.rda")           # 1814    5
 
+
+# Patient 5 and 6 are high in MS
 load("data/sample_PheMAP.Rdata")   # dataset updated 07/09/2019. name: df, 1864*8
 
+# use_new_data=TRUE
+# if(use_new_data){...}
 
-phe_man <- colnames(dat)               # 1864, with 2 columns already filtered by Luwan; 
-# the corresponding MAPcutoff for these two phecodes are NAs
 
-# filter out phecodes with NA cutoff
-MAPcutoff_filteredNA <- MAPcutoff[which(!is.na(MAPcutoff$cutoff)),]     # 1864    2
+phe_man <- df$phecode   # 1864, with 2 already filtered by Luwan; 
+
+# filter out phecodes with NA cutoff, with 2 NAs
+MAPcutoff_filteredNA <- MAPcutoff[!is.na(MAPcutoff$cutoff),]     # 1864    2
+
 # PheWAS group info summary
-
 groupinfo_df <- table(pheinfo$groupnum) %>% names %>% as.data.frame    # 17 groups (1-15, 17-18) 
 colnames(groupinfo_df) <- "Groupnum"
 groupinfo_df$num <- table(pheinfo$groupnum) %>% unname
 
 vis_df_all <- tibble()
 
-for (i_indi in 1:nrow(dat)){
+for (i_indi in 2:(ncol(df)-1)){   # starting from the second columns
   
-  phe_man_indiv1 <- phe_man %>% tibble %>% mutate(map_prob = dat[i_indi,]) 
+  phe_man_indiv1 <- phe_man %>% tibble %>% mutate(map_prob = df[,i_indi]) 
   colnames(phe_man_indiv1)[1] <- "phecode"
   # dim(phe_man_indiv1)      # check dimension
   
@@ -99,22 +103,23 @@ for (i_indi in 1:nrow(dat)){
   MAPcutoff_filteredNA <- MAPcutoff_filteredNA %>% mutate(phecode = phecode %>% str_replace('_','.') %>% as.character)
   for (i in 1:length(MAPcutoff_filteredNA$phecode)){
     if(MAPcutoff_filteredNA$phecode[i] %>% str_sub(.,start=nchar(.)) == ".") {
-      MAPcutoff_filteredNA$phecode[i]  <- substr(MAPcutoff_filteredNA$phecode[i], 1,              nchar(MAPcutoff_filteredNA$phecode[i])-1)
+      MAPcutoff_filteredNA$phecode[i]  <- substr(MAPcutoff_filteredNA$phecode[i], 1, nchar(MAPcutoff_filteredNA$phecode[i])-1)
     }
   }
   
   # extract list of significant phecodes for each individual patient 
   # Assume that it would be common that there would be NAs in individual patient's data (phe_man_indiv1) ; 
   # but generally fixed number of NAs in MAPcutoff file (MAPcutoff), 2 NAs in our case, already filtered for downstream analysis (MAPcutoff_filteredNA)
+  
   sig_list <- c()
-  for (i in 1:length(phe_man_indiv1$phecode)){
-    if(is.na(phe_man_indiv1$map_prob[i])) next
-    which_row <- match(phe_man_indiv1$phecode[i], MAPcutoff_filteredNA$phecode)
-    if (phe_man_indiv1$map_prob[which_row] > MAPcutoff_filteredNA$cutoff[which_row]) {
-      sig_list <- c(sig_list,phe_man_indiv1$phecode[which_row])
+  # [new]
+  phe_man_indiv1 <- phe_man_indiv1 %>% mutate(cutoff=df$cut.MAP)
+  
+  for (i in 1:dim(phe_man_indiv1)[1]){
+    if (phe_man_indiv1$map_prob[i] > phe_man_indiv1$cutoff[i]) {
+      sig_list <- c(sig_list,phe_man_indiv1$phecode[i])
     }
   }
-  
   
   ######################
   # Actual visualization
@@ -122,14 +127,14 @@ for (i_indi in 1:nrow(dat)){
   color_vis <- c("blue","darkcyan","brown","darkorange1","magenta","darkblue",
                  "darkseagreen4","red","coral4","chartreuse4","black","royalblue4",
                  "firebrick","darkolivegreen","mediumspringgreen","purple","gray50")
-
+  
   # convert color to rgb format, for use in DT table
   colvis_rgb <- c()
   for (ele in color_vis){
     tmp <- col2rgb(ele)
     colvis_rgb <- c(colvis_rgb,str_glue("rgb({tmp[1]},{tmp[2]},{tmp[3]})"))
   }
-    
+  
   vis_df <- binom %>% 
     arrange(groupnum) %>% 
     mutate(phenotypes = rownames(binom) %>% as.numeric,
@@ -138,7 +143,7 @@ for (i_indi in 1:nrow(dat)){
   
   groupinfo_df$group <- vis_df %>% group_by(group) %>% summarize(groupnum = groupnum[1]) %>% 
     arrange(groupnum) %>% .$group
-  
+
   # # Prepare data for the barchart plot
   # # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
   tmp_df <- vis_df[which(vis_df$is_highlight == "yes"),]
@@ -148,7 +153,7 @@ for (i_indi in 1:nrow(dat)){
   ratio_df <- groupinfo_df
   flag = 0
   for (j in 1:nrow(groupinfo_df)){
-    if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
+    if(is.na(tmpp_df$Groupnum[j-flag]) | (tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j])){
       ratio_df$num[j] <- 0
       flag = flag + 1
     } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
@@ -156,12 +161,14 @@ for (i_indi in 1:nrow(dat)){
     }
   }
   colnames(ratio_df)[2] <- "Proportion_abv_thrh"
+  
 
+   
   tmp <- c()
   for (ele in ratio_df$Proportion_abv_thrh){
     tmp <- c(tmp,percent(ele))
   }
-
+  
   ratio_df$description <- paste0("PheWAS group: ",ratio_df$group,
                                  "\nProportion above threshold: ",
                                  tmp, sep="")
@@ -223,7 +230,8 @@ for (i_indi in 1:nrow(dat)){
   # ggplotly() function returns a plotly object
   # ggplotly(p, tooltip="text")
   
-  vis_df <- merge(vis_df, MAPcutoff_filteredNA, by.x = "phenotype", by.y = "phecode") %>% arrange(phenotypes) # add cutoff threshold info into vis_df
+  vis_df <- merge(vis_df, phe_man_indiv1[,c(1,3)], by.x = "phenotype", by.y = "phecode") %>% arrange(phenotypes) 
+  # vis_df <- merge(vis_df, MAPcutoff_filteredNA, by.x = "phenotype", by.y = "phecode") %>% arrange(phenotypes) # add cutoff threshold info into vis_df
   colnames(vis_df)[1] <- "phecode"
   ### append into a final tibble that contains all the info
   vis_df_all <- rbind(vis_df_all,vis_df)   
@@ -304,7 +312,8 @@ ui <- fluidPage(
     h4("You can explore the MAP data in this Shiny App!"),    
     selectInput(inputId="individual_id",
                 label="Select Patient ID: ",
-                choices=c(1:nrow(dat)), 
+                choices=c(1:(ncol(df)-2)), 
+                # choices=c(1:nrow(dat)), 
                 selected = 1, selectize = F),
     plotlyOutput("bar"),
     
@@ -528,7 +537,8 @@ server <- function(input, output, session) {
   
   output$bar <- renderPlotly({
     
-    mat <- match(input$individual_id,1:nrow(dat)) 
+    mat <- match(input$individual_id,1:(ncol(df)-2))
+    # mat <- match(input$individual_id,1:nrow(dat)) 
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
     tmp_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
@@ -541,7 +551,7 @@ server <- function(input, output, session) {
     ratio_df <- groupinfo_df
     flag = 0
     for (j in 1:nrow(groupinfo_df)){
-      if(tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j]){
+      if(is.na(tmpp_df$Groupnum[j-flag]) | (tmpp_df$Groupnum[j-flag] != groupinfo_df$Groupnum[j])){
         ratio_df$num[j] <- 0
         flag = flag + 1
       } else if (tmpp_df$Groupnum[j-flag] == groupinfo_df$Groupnum[j]){
@@ -582,34 +592,40 @@ server <- function(input, output, session) {
         axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
         plot.title = element_text(size = 8)) 
     
-    ggplotly(tmp,tooltip="text")
+    ggplotly(tmp,tooltip="text",source="bar")
     # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
     
   })
+  
+  
   
   # For MAIN tabset
   ####################
   # the Manhattan plot
   output$plot <- renderPlotly({
     
-    # try to fix the source problem
-    #  print(event_data("plotly_click")$x)
+    phegrp_highlight <- event_data("plotly_click", source = "bar")$x
     
-    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
+    mat <- match(input$individual_id,1:(ncol(df)-2))
+    # mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
     sub_df <- vis_df_all[min_sub:max_sub, ]
     
     man_df <- tibble()
     for (ele in bar_order){
-      df <- sub_df[sub_df$groupnum == ele,]
-      man_df <- rbind(man_df,df)  
+      dff <- sub_df[sub_df$groupnum == ele,]
+      man_df <- rbind(man_df,dff)  
     }
     
     man_df$phenotypes <- 1:nrow(man_df)
     subman_df <- subset(man_df, is_highlight=="yes")
     
     axisdf <- man_df %>% group_by(group) %>% summarize(center=( max(phenotypes) + min(phenotypes) ) / 2 )
+    
+    if(!is.null(phegrp_highlight)){
+      subman_df <- subset(man_df,man_df$groupnum==bar_order[phegrp_highlight]) %>% subset(is_highlight=="yes")
+    }
     
     tmp <- ggplot(man_df, aes(x = phenotypes, y = map_prob,text = description)) +
       
@@ -636,40 +652,13 @@ server <- function(input, output, session) {
       )
     
     # make the plot interactive  
-    ggplotly(tmp, tooltip="text")        
+    # important to add `source="plot"` here, so that downstream plot can recall the results
+    ggplotly(tmp, tooltip="text",source="plot")  
+    
     # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
   })
   
   
-  ###############
-  # Word Cloud
-  observeEvent(input$individual_id, {
-    lasso <- event_data("plotly_relayout")
-    # print(lasso)
-    
-    # Still there are some problems!
-    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
-    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
-    max_sub <- nrow(vis_df)*mat  
-    
-    sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
-    if (!is.null(lasso) & length(lasso)==4) {
-      x.min <- lasso[1]; x.max <- lasso[2]
-      y.min <- lasso[3]; y.max <- lasso[4]
-      
-      sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
-                                    map_prob >= y.min & map_prob <= y.max)
-    }
-    
-    word_cl <- sub_df %>% .[,c(7,6)]  #extract columns map_prob and pheno
-    colnames(word_cl) <- c("name","value")
-    
-    # the actual word cloud generating function
-    renderWordcloud("wordcloud", data = word_cl,
-                    shape = 'circle',
-                    rotationRange = c(-90, 90),
-                    grid_size = 5, sizeRange = c(25, 40))
-  })
   
   
   # For Info Table 
@@ -680,8 +669,8 @@ server <- function(input, output, session) {
   
   # output the total number of phecodes that are above their corresponding threshold
   output$cond_num <- renderText({
-    
-    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
+    mat <- match(input$individual_id,1:(ncol(df)-2))
+    # mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat        
     
@@ -689,44 +678,103 @@ server <- function(input, output, session) {
           subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes") %>% nrow,".")
   })
   
-  # Show the result in the DT table                        
-  output$panel <- DT::renderDT({
+  
+  ## !!
+  # Manhattan plot selection will actively influence both info table & wordcloud 
+  output$brush <- renderText({
     
-    lasso <- event_data("plotly_relayout")
+    lasso <-event_data("plotly_relayout", source = "plot")
+    phegrp_highlight <- event_data("plotly_click", source = "bar")$x
     
-    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
+    mat <- match(input$individual_id,1:(ncol(df)-2))
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
     max_sub <- nrow(vis_df)*mat  
-    sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")
+    sub_df <- vis_df_all[min_sub:max_sub, ]
+    
+    man_df <- tibble()
+    for (ele in bar_order){
+      dff <- sub_df[sub_df$groupnum == ele,]
+      man_df <- rbind(man_df,dff)  
+    }
+    
+    man_df$phenotypes <- 1:nrow(man_df)
+    subman_df <- subset(man_df, is_highlight=="yes")
+    
     
     if (!is.null(lasso) & length(lasso)==4) {
       x.min <- lasso[1]; x.max <- lasso[2]
       y.min <- lasso[3]; y.max <- lasso[4]
       
-      sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
-                                    map_prob >= y.min & map_prob <= y.max)
+      subman_df <- subman_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
+                                          map_prob >= y.min & map_prob <= y.max)
     }
     
-    sub_df$phecode_pheno <- paste0(sub_df$pheno, " [", sub_df$phecode, "]")
+    if(!is.null(phegrp_highlight)){
+      subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight]) 
+    }
+    
+    num_count <- nrow(subman_df) %>% as.numeric
+    
+    paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
+    
+  })
+  
+  
+  # Show the result in the DT table                        
+  output$panel <- DT::renderDT({
+    
+    lasso <-event_data("plotly_relayout", source = "plot")
+    phegrp_highlight <- event_data("plotly_click", source = "bar")$x
+    
+    
+    mat <- match(input$individual_id,1:(ncol(df)-2))
+    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+    max_sub <- nrow(vis_df)*mat  
+    sub_df <- vis_df_all[min_sub:max_sub, ]
+    
+    man_df <- tibble()
+    for (ele in bar_order){
+      dff <- sub_df[sub_df$groupnum == ele,]
+      man_df <- rbind(man_df,dff)  
+    }
+    
+    man_df$phenotypes <- 1:nrow(man_df)
+    subman_df <- subset(man_df, is_highlight=="yes")
+    
+    if (!is.null(lasso) & length(lasso)==4) {
+      x.min <- lasso[1]; x.max <- lasso[2]
+      y.min <- lasso[3]; y.max <- lasso[4]
+      
+      subman_df <- subman_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
+                                          map_prob >= y.min & map_prob <= y.max)
+    }
+    
+    subman_df$phecode_pheno <- paste0(subman_df$pheno, " [", subman_df$phecode, "]")
+    
+    if(!is.null(phegrp_highlight)){
+      subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight]) 
+    }
     
     if(input$details == "TRUE"){
-      sub_df <- data.frame(# Phecodes = sub_df$phecode, 
-        Group = sub_df$group,
-        cl = sub_df$groupnum,
-        Phenotype = sub_df$phecode_pheno,
-        MAP_prob = sub_df$map_prob %>% round(4),
-        MAP_cutoff = sub_df$cutoff %>% round(4))
+      subman_df <- data.frame(# Phecodes = sub_df$phecode, 
+        Group = subman_df$group,
+        cl = subman_df$groupnum,
+        Phenotype = subman_df$phecode_pheno,
+        MAP_prob = subman_df$map_prob %>% round(4),
+        MAP_cutoff = as.numeric(subman_df$cutoff) %>% round(4))
+      names(subman_df)[c(1,3,4,5)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability","MAP Cutoff")
     } else{
-      sub_df <- data.frame(# Phecodes = sub_df$phecode, 
-        Group = sub_df$group,
-        cl = sub_df$groupnum,
-        Phenotype = sub_df$phecode_pheno,
-        MAP_prob = sub_df$map_prob %>% round(4)) 
+      subman_df <- data.frame(# Phecodes = sub_df$phecode, 
+        Group = subman_df$group,
+        cl = subman_df$groupnum,
+        Phenotype = subman_df$phecode_pheno,
+        MAP_prob = subman_df$map_prob %>% round(4)) 
+      names(subman_df)[c(1,3,4)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability")
     }
-    names(sub_df)[c(1,3,4)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability")
+    
     
     # Sort the table first by MAP probabilities then by category (only showing the “Yes” phenotypes)
-    datatable(sub_df %>% arrange(desc(`Map Probability`),cl),
+    datatable(subman_df %>% arrange(desc(`Map Probability`),cl),
               options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
@@ -734,27 +782,88 @@ server <- function(input, output, session) {
     
   })
   
-  output$brush <- renderText({
-    lasso <- event_data("plotly_relayout")
+  
+  ###############
+  # Word Cloud  - only show what's selected in the Manhattan plot ; click thing.. not yet available here...
+  observeEvent(input$individual_id, {
     
-    mat <- match(input$individual_id,1:nrow(dat)) # `dat` contains the MAP probabilities for each individual patient across all diseases
-    min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
-    max_sub <- nrow(vis_df)*mat  
-    sub_df <- subset(vis_df_all[min_sub:max_sub, ], is_highlight=="yes")  # create a subset for each individual patient
+    phegrp_highlight <- event_data("plotly_click", source = "bar")$x
     
-    if (!is.null(lasso) & length(lasso)==4) {
-      x.min <- lasso[1]; x.max <- lasso[2]
-      y.min <- lasso[3]; y.max <- lasso[4]
+    # Try to fix a minor problem (has to move the window a little bit to make wordcloud display
+    # just initially move it a little bit, then it's fine)
+    if(is.null(event_data("plotly_relayout", source = "plot"))){
       
-      sub_df <- sub_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
-                                    map_prob >= y.min & map_prob <= y.max)
+      mat <- match(input$individual_id,1:(ncol(df)-2))
+      min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+      max_sub <- nrow(vis_df)*mat  
+      sub_df <- vis_df_all[min_sub:max_sub, ]
+      
+      man_df <- tibble()
+      for (ele in bar_order){
+        dff <- sub_df[sub_df$groupnum == ele,]
+        man_df <- rbind(man_df,dff)  
+      }
+      
+      man_df$phenotypes <- 1:nrow(man_df)
+      subman_df <- subset(man_df, is_highlight=="yes")
+      
+      if(!is.null(phegrp_highlight)){
+        subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight]) 
+      }
+      
+      word_cl <- subman_df %>% .[,c(7,6)]  #extract columns map_prob and pheno
+      colnames(word_cl) <- c("name","value")
+      
+      # the actual word cloud generating function
+      renderWordcloud("wordcloud", data = word_cl,
+                      shape = 'circle',
+                      rotationRange = c(-50, 50),
+                      grid_size = 5, sizeRange = c(25, 40))
     }
     
-    num_count <- nrow(sub_df) %>% as.numeric
-    
-    paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
-    
+    observeEvent(event_data("plotly_relayout", source = "plot"), {
+      lasso <-event_data("plotly_relayout", source = "plot")
+      phegrp_highlight <- event_data("plotly_click", source = "bar")$x
+      
+      mat <- match(input$individual_id,1:(ncol(df)-2))
+      min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
+      max_sub <- nrow(vis_df)*mat  
+      sub_df <- vis_df_all[min_sub:max_sub, ]
+      
+      man_df <- tibble()
+      for (ele in bar_order){
+        dff <- sub_df[sub_df$groupnum == ele,]
+        man_df <- rbind(man_df,dff)  
+      }
+      
+      man_df$phenotypes <- 1:nrow(man_df)
+      subman_df <- subset(man_df, is_highlight=="yes")
+      
+      if (!is.null(lasso) & length(lasso)==4) {
+        x.min <- lasso[1]; x.max <- lasso[2]
+        y.min <- lasso[3]; y.max <- lasso[4]
+        
+        subman_df <- subman_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
+                                            map_prob >= y.min & map_prob <= y.max)
+      }
+      
+      if(!is.null(phegrp_highlight)){
+        subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight]) 
+      }
+      
+      word_cl <- subman_df %>% .[,c(7,6)]  #extract columns map_prob and pheno
+      colnames(word_cl) <- c("name","value")
+      
+      # the actual word cloud generating function
+      renderWordcloud("wordcloud", data = word_cl,
+                      shape = 'circle',
+                      rotationRange = c(-90, 90),
+                      grid_size = 5, sizeRange = c(25, 40))
+    })
   })
+  
+  
+  
   
   # For VD tabset
   ###############
