@@ -23,17 +23,23 @@ library(crosstalk)
 # for Word cloud generator
 library(ECharts2Shiny)
 
-# Read in the data
 
+### Generally speaking, only 'pheinfo.rda' & 'sample_PheMAP.Rdata' are sufficient.
+# Read in the data
 # `dat` contains the MAP probabilities for each individual patient across all diseases
 setwd("~/Desktop/Capstone")
 load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
 load("data/MAPcutoff.Rdata")       # 1866    2
-load("data/pheinfo.rda")           # 1814    5
+load("data/pheinfo.rda")           # 1814    5            
 
 
 # Patient 5 and 6 are high in MS
-load("data/sample_PheMAP.Rdata")   # dataset updated 07/09/2019. name: df, 1864*8
+load("data/sample_PheMAP.Rdata")   # dataset updated 07/09/2019. name: df, 1864*8  
+# format:  phecode pat1 pat2 pat3 pat4 pat5 pat6 cut.MAP
+
+
+
+
 
 # use_new_data=TRUE
 # if(use_new_data){...}
@@ -302,7 +308,6 @@ choices <- unique(three_mss$PatientNum)
 ###########
 ## Capstone project
 # shiny app
-
 bar_order <- 0
 
 ui <- fluidPage(
@@ -323,7 +328,20 @@ ui <- fluidPage(
       Then it would output a barchart showing the information of the proportion of the phecodes above threshold in each PheWAS group of this individual patient.
       It would also output a Manhattan plot showing the MAP probabilities of each phecodes of this selected patient.
       You can hover over the points in Manhattan plot or Barchart to get more information.
-      Enjoy playing around with it!")
+      Enjoy playing around with it!"),
+    
+    br(),
+    h4("You can also upload your own data files here!"), 
+    fileInput(inputId = "file1"
+              , label = "Chooose file for Phecode info:"
+              , multiple = F
+              , buttonLabel = "Browse..."
+              , placeholder = "No file selected"),
+    fileInput(inputId = "file2"
+              , label = "Chooose file for Patients and MAP cutoff:"
+              , multiple = F
+              , buttonLabel = "Browse..."
+              , placeholder = "No file selected")
     ),
   
   mainPanel(
@@ -374,7 +392,9 @@ ui <- fluidPage(
                       selectInput(inputId="patient_num",
                                   label="Select Patient Number: ",
                                   choices=choices, 
-                                  selected = 1)), # modify the size of the input box
+                                  selected = 1),
+                      checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
+                      checkboxInput("show_penc","Show percentage",FALSE)), # Abs encounters -> percentage
                column(width = 6,
                       selectInput(inputId="enco_type",
                                   label="Select Encounter type(s): ",
@@ -400,9 +420,10 @@ ui <- fluidPage(
                                   choices=unique(three_mss$Category), multiple = T,
                                   selected = unique(three_mss$Category))),
                br(), br(), br(), br(), br(), br(), br(),
+               h4("Encounters by Day"),
                plotlyOutput("all_six", height = 600),
                br(),
-               h3("Vitamin D Levels"),
+               h4("Vitamin D Levels"),
                plotlyOutput("vitd"))
     ) # for tabsetPanel
     
@@ -438,6 +459,7 @@ server <- function(input, output, session) {
   
   
   observeEvent(input$enco_type,{
+    
     output$dat_year <- renderPlotly({
       
       id <- match(input$patient_num, choices)
@@ -447,17 +469,44 @@ server <- function(input, output, session) {
       
       select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
       
-      sd1 <- SharedData$new(select_df)
-      # sd1 <- SharedData$new(three_mss[pat_encounter,])
+      k <- select_df %>% count(Category,Year)
+      k$color <- factor(k$Category, labels = RColorBrewer::brewer.pal(length(unique(k$Category)), name = "Set2"))
+      k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+                              "\nCategory: ",k$Category,
+                              "\nEncounter: ",k$n)
+      #Default:group bar charts & abs # of encounters
+      yaxi=list(title='Encounter', visible=T); my_barmode='group'   
+      
+      
+      # consider 4 different scenarios
+      if(input$show_stackbar == TRUE) my_barmode='stack'
+      if(input$show_penc == TRUE) {
+        # percent
+        k1=select_df %>% count(Year)
+        k_lj=left_join(k,k1,by="Year")
+        k$n = k_lj$n.x/k_lj$n.y; 
+        k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+                                "\nCategory: ",k$Category,
+                                "\nPercentage: ",percent(k$n))
+        
+        yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+      }
+      
+      title_style <- list(text="Encounters Aggregated by Year",xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
+      
+      sd1 <- SharedData$new(k)
       
       pc <- sd1 %>%
         plot_ly(source = "dat_year", name =~Category, # name of the legend
-                x = ~Year, y = ~Encounter, color=~color, type="bar",    # ensure each Category has unique color
+                x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                 text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
         #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-        layout(barmode='stack', title = "Encounters Aggregated by Year",
-               yaxis=list(title='Encounters', visible=T), 
-               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+        layout(barmode=my_barmode, 
+               # title = "Encounters Aggregated by Year",
+               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+               yaxis=yaxi,
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
       
       
       if (is.null(dat_year())) {
@@ -485,14 +534,43 @@ server <- function(input, output, session) {
       sd <- three_mss[pat_encounter,] %>% 
         filter(Year == dat_year(), Category %in% keep_category)
       yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
-      sd2 <- SharedData$new(sd)
+      # sd2 <- SharedData$new(sd)
+      
+      k <- sd %>% count(Category,Month)
+      k$color <- factor(k$Category, labels = RColorBrewer::brewer.pal(length(unique(k$Category)), name = "Set2"))
+      k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+                              "\nCategory: ",k$Category,
+                              "\nEncounter: ",k$n)
+      
+      #Default:group bar charts & abs # of encounters
+      yaxi=list(title='Encounter', visible=T); my_barmode='group'
+      
+      # consider 4 different scenarios
+      if(input$show_stackbar == TRUE) my_barmode='stack'
+      if(input$show_penc == TRUE) {
+        # percent
+        k1= sd %>% count(Month)
+        k_lj=left_join(k,k1,by="Month")
+        k$n = k_lj$n.x/k_lj$n.y; 
+        k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+                                "\nCategory: ",k$Category,
+                                "\nPercentage: ",percent(k$n))
+        
+        yaxi=list(title='Percentage per Month', visible=T,tickformat = "%")
+      }
+      
+      title_style <- list(text=paste0("Encounters Aggregated by Month (Year ", yyear,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
+      
+      
+      sd2 <- SharedData$new(k)
+      
       pc <- sd2 %>%
         plot_ly(source = "dat_month", name =~Category,
+                x = ~Month, y = ~n, color=~color, type="bar",
                 text=~Description, hoverinfo="text") %>% 
-        suppressWarnings %>%
-        add_bars(x = ~Month, y = ~Encounter, color=~color) %>%
-        layout(barmode='stack', title = paste0("Encounters Aggregated by Month (Year ", yyear,")"),
-               yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Month', rangeslider=list(type="date"), visible=TRUE))
+        layout(barmode=my_barmode, annotations=title_style,
+               yaxis=yaxi, xaxis=list(title='Month', rangeslider=list(type="date"), visible=T))
       
       if (is.null(dat_month())) {
         pic_month <<- pc
@@ -512,13 +590,43 @@ server <- function(input, output, session) {
       sd <- three_mss[pat_encounter,] %>% 
         filter(Month == dat_month(), Category %in% keep_category)
       mmonth <- sd$Month[1] %>% substr(1, 7)
-      sd3 <- SharedData$new(sd)
+      # sd3 <- SharedData$new(sd)
+      
+      k <- sd %>% count(Category,StartDate)
+      k$color <- factor(k$Category, labels = RColorBrewer::brewer.pal(length(unique(k$Category)), name = "Set2"))
+      k$Description <- paste0("Date: ",k$StartDate, 
+                              "\nCategory: ",k$Category,
+                              "\nEncounter: ",k$n)
+      
+      #Default:group bar charts & abs # of encounters
+      yaxi=list(title='Encounter', visible=T); my_barmode='group'
+      
+      # consider 4 different scenarios
+      if(input$show_stackbar == TRUE) my_barmode='stack'
+      if(input$show_penc == TRUE) {
+        # percent
+        k1= sd %>% count(StartDate)
+        k_lj=left_join(k,k1,by="StartDate")
+        k$n = k_lj$n.x/k_lj$n.y; 
+        k$Description <- paste0("Date: ",k$StartDate, 
+                                "\nCategory: ",k$Category,
+                                "\nPercentage: ",percent(k$n))
+        
+        yaxi=list(title='Percentage per Day', visible=T,tickformat = "%")
+      }
+      
+      
+      title_style <- list(text=paste0("Encounters by Day (Month ", mmonth,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
+      
+      sd3 <- SharedData$new(k)
+      
       pc <- sd3 %>%
         plot_ly(source = "dat_daily", name =~Category,
+                x = ~StartDate, y = ~n, color=~color, type="bar",
                 text=~Description, hoverinfo="text") %>% 
-        add_bars(x = ~StartDate, y = ~Encounter, color=~color) %>%
-        layout(barmode='stack', title = paste0("Encounters by Day (Month ", mmonth,")"),
-               yaxis=list(title='Encounters', visible=TRUE), xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
+        layout(barmode=my_barmode, annotations=title_style ,
+               yaxis=yaxi, xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
       
       if (is.null(dat_daily())) {
         pic_daily <<- pc
@@ -590,12 +698,14 @@ server <- function(input, output, session) {
         panel.grid.minor.x = element_blank(),
         axis.title.y = element_text(size=8),   # family = "sans",
         axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
-        plot.title = element_text(size = 8)) 
+        plot.title = element_text(size = 8),
+        panel.background = element_rect(fill = "transparent",colour = NA),   # These two rows make the background of the barchart transparent
+        plot.background = element_rect(fill = "transparent",colour = NA)) 
     
     ggplotly(tmp,tooltip="text",source="bar")
     # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
     
-  })
+  })         
   
   
   
@@ -657,8 +767,6 @@ server <- function(input, output, session) {
     
     # ggplotly(get(str_glue("p{input$individual_id}")), tooltip="text")
   })
-  
-  
   
   
   # For Info Table 
@@ -775,7 +883,7 @@ server <- function(input, output, session) {
     
     # Sort the table first by MAP probabilities then by category (only showing the “Yes” phenotypes)
     datatable(subman_df %>% arrange(desc(`Map Probability`),cl),
-              options = list(pageLength = 10)) %>%    # each time shows only 10 rows in the output table
+              options = list(pageLength = 20)) %>%    # each time shows only 10 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
@@ -935,8 +1043,7 @@ server <- function(input, output, session) {
                 yaxis = ~paste0("y", id)) %>%
         # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
         add_bars(width=1000*3600*30) %>%    # set consistent bar width
-        layout(title = "Encounters by Day",
-               bargap = 0.05,   # set bar gap
+        layout(bargap = 0.05,   # set bar gap
                yaxis=ay,
                xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
         subplot(nrows = 6, shareX = TRUE,
@@ -951,4 +1058,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
