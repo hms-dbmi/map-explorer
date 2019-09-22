@@ -469,8 +469,7 @@ server <- function(input, output, session) {
       
       select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
       
-      k <- select_df %>% count(Category,Year)
-      k$color <- factor(k$Category, labels = RColorBrewer::brewer.pal(length(unique(k$Category)), name = "Set2"))
+      k <- select_df %>% count(Category,Year,color)
       k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
@@ -530,14 +529,12 @@ server <- function(input, output, session) {
       
       keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
       
-      
       sd <- three_mss[pat_encounter,] %>% 
         filter(Year == dat_year(), Category %in% keep_category)
       yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
       # sd2 <- SharedData$new(sd)
       
-      k <- sd %>% count(Category,Month)
-      k$color <- factor(k$Category, labels = RColorBrewer::brewer.pal(length(unique(k$Category)), name = "Set2"))
+      k <- sd %>% count(Category,Month,color)
       k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
@@ -562,15 +559,19 @@ server <- function(input, output, session) {
       title_style <- list(text=paste0("Encounters Aggregated by Month (Year ", yyear,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
       
+      # when a month with entries only from one date, still show bars  
+      if(length(unique(k[,1]))) nr=nrow(k); k[nr+1,] = k[nr,]; k[nr+1,3]=k[nr,3]+10; k[nr+1,5]=0
       
       sd2 <- SharedData$new(k)
       
       pc <- sd2 %>%
-        plot_ly(source = "dat_month", name =~Category,
-                x = ~Month, y = ~n, color=~color, type="bar",
+        plot_ly(source = "dat_month", name =~Category, type='bar',
+                x = ~Month, y = ~n, color=~color, 
                 text=~Description, hoverinfo="text") %>% 
-        layout(barmode=my_barmode, annotations=title_style,
-               yaxis=yaxi, xaxis=list(title='Month', rangeslider=list(type="date"), visible=T))
+        # add_bars(width=1000*3600*30*3) %>%
+        layout(bargap=0.2,barmode=my_barmode, annotations=title_style,
+               yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01"),paste0(yyear,"-12")),title='Month', 
+                                      rangeslider=list(type="date",range=c(paste0(yyear,"-01"),paste0(yyear,"-12"))), visible=T))
       
       if (is.null(dat_month())) {
         pic_month <<- pc
@@ -592,8 +593,7 @@ server <- function(input, output, session) {
       mmonth <- sd$Month[1] %>% substr(1, 7)
       # sd3 <- SharedData$new(sd)
       
-      k <- sd %>% count(Category,StartDate)
-      k$color <- factor(k$Category, labels = RColorBrewer::brewer.pal(length(unique(k$Category)), name = "Set2"))
+      k <- sd %>% count(Category,StartDate,color)
       k$Description <- paste0("Date: ",k$StartDate, 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
@@ -619,14 +619,23 @@ server <- function(input, output, session) {
       title_style <- list(text=paste0("Encounters by Day (Month ", mmonth,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
       
+      if(length(unique(k[,1]))) nr=nrow(k); k[nr+1,] = k[nr,]; k[nr+1,3]=k[nr,3]+10; k[nr+1,5]=0
+      
       sd3 <- SharedData$new(k)
+      
+      # figure out the number of days in a month
+      thirty_one=c(1,3,5,7,8,10,12); thirty=c(4,6,9,11); 
+      if(str_sub(mmonth,6,7) %in% thirty_one) dat='-31'
+      else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
+      else dat='-28'
       
       pc <- sd3 %>%
         plot_ly(source = "dat_daily", name =~Category,
                 x = ~StartDate, y = ~n, color=~color, type="bar",
                 text=~Description, hoverinfo="text") %>% 
         layout(barmode=my_barmode, annotations=title_style ,
-               yaxis=yaxi, xaxis=list(title='Date', rangeslider=list(type="date"), visible=TRUE))
+               yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                      rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
       
       if (is.null(dat_daily())) {
         pic_daily <<- pc
@@ -883,7 +892,7 @@ server <- function(input, output, session) {
     
     # Sort the table first by MAP probabilities then by category (only showing the “Yes” phenotypes)
     datatable(subman_df %>% arrange(desc(`Map Probability`),cl),
-              options = list(pageLength = 20)) %>%    # each time shows only 10 rows in the output table
+              options = list(pageLength = 20)) %>%    # each time shows only 20 rows in the output table
       formatStyle('cl',
                   backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
     
