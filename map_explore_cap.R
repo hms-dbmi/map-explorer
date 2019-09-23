@@ -310,6 +310,7 @@ choices <- unique(three_mss$PatientNum)
 # shiny app
 bar_order <- 0
 
+
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
   
@@ -393,6 +394,8 @@ ui <- fluidPage(
                                   label="Select Patient Number: ",
                                   choices=choices, 
                                   selected = 1),
+                      # get rid of the extra line between two checkboxes
+                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
                       checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
                       checkboxInput("show_penc","Show percentage",FALSE)), # Abs encounters -> percentage
                column(width = 6,
@@ -492,7 +495,7 @@ server <- function(input, output, session) {
       }
       
       title_style <- list(text="Encounters Aggregated by Year",xanchor="left", yanchor="top",showarrow=F,xref = "paper",
-                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
+                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
       
       sd1 <- SharedData$new(k)
       
@@ -557,7 +560,7 @@ server <- function(input, output, session) {
       }
       
       title_style <- list(text=paste0("Encounters Aggregated by Month (Year ", yyear,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
-                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
+                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
       
       # when a month with entries only from one date, still show bars  
       if(length(unique(k[,1]))) nr=nrow(k); k[nr+1,] = k[nr,]; k[nr+1,3]=k[nr,3]+10; k[nr+1,5]=0
@@ -617,7 +620,7 @@ server <- function(input, output, session) {
       
       
       title_style <- list(text=paste0("Encounters by Day (Month ", mmonth,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
-                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=15,color='black'))
+                          yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
       
       if(length(unique(k[,1]))) nr=nrow(k); k[nr+1,] = k[nr,]; k[nr+1,3]=k[nr,3]+10; k[nr+1,5]=0
       
