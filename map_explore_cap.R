@@ -482,7 +482,7 @@ server <- function(input, output, session) {
       yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"  
       
       
-      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -645,7 +645,7 @@ server <- function(input, output, session) {
       yaxi=list(title='Encounter', visible=T); my_barmode='group'; title=paste0("Encounters Aggregated by Month (Year ", yyear,")")
       
       
-      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -803,7 +803,7 @@ server <- function(input, output, session) {
       
       # k_ori <<- k
       
-      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
