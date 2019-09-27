@@ -397,7 +397,8 @@ ui <- fluidPage(
                       # get rid of the extra line between two checkboxes
                       tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
                       checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
-                      checkboxInput("show_penc","Show percentage",FALSE)), # Abs encounters -> percentage
+                      checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
+                      checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)), 
                column(width = 6,
                       selectInput(inputId="enco_type",
                                   label="Select Encounter type(s): ",
@@ -476,11 +477,12 @@ server <- function(input, output, session) {
       k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
+      
       #Default:group bar charts & abs # of encounters
-      yaxi=list(title='Encounter', visible=T); my_barmode='group'   
+      yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"  
       
       
-      # consider 4 different scenarios
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -492,10 +494,104 @@ server <- function(input, output, session) {
                                 "\nPercentage: ",percent(k$n))
         
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+        # k_perc <<- k
       }
       
-      title_style <- list(text="Encounters Aggregated by Year",xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+      ##############
+      ##############
+      ##Make Comparison - Year
+      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
+      if(input$show_comp == TRUE){
+        
+        first_else=0; k$comp=0; flag=0 
+        for(i in 1:nrow(k)){
+          yr_new=k$Year[i]
+          #1st if - only run in the 1st i 
+          if(i==1) {yr=k$Year[i]; info_new=c(); info=c()} 
+          
+          #2nd if - only run in the last i
+          if(i==nrow(k)) {
+            yr=k$Year[i]-1  #make it bypass the third if and go to else
+            if(flag==0){
+              info[k$Category[i]]=k$n[i]
+            }else{
+              info_new[k$Category[i]]=k$n[i]
+            }
+          }
+          
+          #3rd big if  
+          if(yr_new==yr) {
+            if(flag==0){
+              info[k$Category[i]]=k$n[i]
+            }else{
+              info_new[k$Category[i]]=k$n[i]
+            }
+            
+          }else { # for making comparison (& if two yrs don't match, move to store in new yrs)
+            yr=k$Year[i]
+            if(flag==0) {  # 0->1
+              info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that year
+              info=c()                          # set it to default
+              info_new[k$Category[i]]=k$n[i]; flag=1  #"even" yr - info_new (flag=1)
+              
+            }else{         # 1->0
+              info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that year
+              info_new=c()                      # set it to default
+              info[k$Category[i]]=k$n[i]; flag=0      #"odd" yr - info (flag=0)
+            }
+            
+            if(first_else==1){  # starting from the 2nd time of unmatch of two yrs, run the following code chunk
+              if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
+                info_even[!(names(info_even) %in% names(info_odd))]=0
+                info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
+                              info_even[!(names(info_even) %in% names(info_odd))])
+                #Arrange the list in target order
+                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                if(i!=nrow(k)){
+                  k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                }else{  # account for the different scenario in the last yr
+                  k$comp[(i-length(info_comp)+1):i]=tmp  
+                }
+                
+                info_even=info_evenk  # undo the change made to info_even
+              }else{    # [odd-even]
+                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
+                              info_odd[!(names(info_odd) %in% names(info_even))])
+                #Arrange the list in target order
+                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                if(i!=nrow(k)){
+                  k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                }else{    # account for the different scenario in the last yr
+                  k$comp[(i-length(info_comp)+1):i]=tmp  
+                }
+                info_odd=info_oddk   # undo the change made to info_odd
+              }
+            }
+            first_else=1   
+          } # a big else 
+        }  # for loop
+        
+        k$n=k$comp  # override n to comp
+        
+        # show the text when hovered over
+        if(input$show_penc == TRUE){
+          k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",percent(k$n))
+        }else{
+          k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",k$n)
+        }
+        
+        title='Difference on Encounters from Two Consecutively-Recorded Years'
+      }  # the input if
+      
+      
+      title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
+      
       
       sd1 <- SharedData$new(k)
       
@@ -534,18 +630,22 @@ server <- function(input, output, session) {
       
       sd <- three_mss[pat_encounter,] %>% 
         filter(Year == dat_year(), Category %in% keep_category)
+      
       yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
       # sd2 <- SharedData$new(sd)
       
-      k <- sd %>% count(Category,Month,color)
+      k <- sd %>% count(Month,Category,color)
+      
       k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
       
-      #Default:group bar charts & abs # of encounters
-      yaxi=list(title='Encounter', visible=T); my_barmode='group'
       
-      # consider 4 different scenarios
+      #Default:group bar charts & abs # of encounters
+      yaxi=list(title='Encounter', visible=T); my_barmode='group'; title=paste0("Encounters Aggregated by Month (Year ", yyear,")")
+      
+      
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -557,13 +657,110 @@ server <- function(input, output, session) {
                                 "\nPercentage: ",percent(k$n))
         
         yaxi=list(title='Percentage per Month', visible=T,tickformat = "%")
+        
+        # k_ori <<- k
       }
       
-      title_style <- list(text=paste0("Encounters Aggregated by Month (Year ", yyear,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+      
+      ##############
+      ##############
+      ##Make Comparison - month
+      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
+      if(input$show_comp == TRUE){
+        
+        first_else=0; k$comp=0; flag=0 
+        for(i in 1:nrow(k)){
+          yr_new=k$Month[i]
+          #1st if - only run in the 1st i 
+          if(i==1) {yr=k$Month[i]; info_new=c(); info=c()} 
+          
+          #2nd if - only run in the last i
+          if(i==nrow(k)) {
+            yr=k$Month[i]-1  #make it bypass the third if and go to else
+            if(flag==0){
+              info[k$Category[i]]=k$n[i]
+            }else{
+              info_new[k$Category[i]]=k$n[i]
+            }
+          }
+          
+          #3rd big if  
+          if(yr_new==yr) {
+            if(flag==0){
+              info[k$Category[i]]=k$n[i]
+            }else{
+              info_new[k$Category[i]]=k$n[i]
+            }
+            
+          }else { # for making comparison (& if two months don't match, move to store in new yrs)
+            yr=k$Month[i]
+            if(flag==0) {  # 0->1
+              info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that month
+              info=c()                          # set it to default
+              info_new[k$Category[i]]=k$n[i]; flag=1  #"even" month - info_new (flag=1)
+              
+            }else{         # 1->0
+              info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that month
+              info_new=c()                      # set it to default
+              info[k$Category[i]]=k$n[i]; flag=0      #"odd" month - info (flag=0)
+            }
+            
+            if(first_else==1){  # starting from the 2nd time of unmatch of two months, run the following code chunk
+              if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
+                info_even[!(names(info_even) %in% names(info_odd))]=0
+                info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
+                              info_even[!(names(info_even) %in% names(info_odd))])
+                #Arrange the list in target order
+                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                if(i!=nrow(k)){
+                  k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                }else{  # account for the different scenario in the last month
+                  k$comp[(i-length(info_comp)+1):i]=tmp  
+                }
+                
+                info_even=info_evenk  # undo the change made to info_even
+              }else{    # [odd-even]
+                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
+                              info_odd[!(names(info_odd) %in% names(info_even))])
+                #Arrange the list in target order
+                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                if(i!=nrow(k)){
+                  k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                }else{    # account for the different scenario in the last month
+                  k$comp[(i-length(info_comp)+1):i]=tmp  
+                }
+                info_odd=info_oddk   # undo the change made to info_odd
+              }
+            }
+            first_else=1   
+          } # a big else 
+        }  # for loop
+        
+        k$n=k$comp  # override n to comp
+        
+        # show the text when hovered over
+        if(input$show_penc == TRUE){
+          k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",percent(k$n))
+        }else{
+          k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",k$n)
+        }
+        title=paste0("Difference on Encounters from Two Consecutively-Recorded Months (Year ", yyear,")")
+        
+        # k <<- k
+        
+      }  # the input if
+      ## The end of the comparison
+      
+      title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
       
-      # when a month with entries only from one date, still show bars  
-      if(length(unique(k[,1]))) nr=nrow(k); k[nr+1,] = k[nr,]; k[nr+1,3]=k[nr,3]+10; k[nr+1,5]=0
+      # when a year with entries only from one date, still show bars  
+      if(length(unique(k$Month))==1) {nr=nrow(k); k[nr+1,] = k[nr,]; k$Month[nr+1]=k$Month[nr]+10; k$n[nr+1]=0}
       
       sd2 <- SharedData$new(k)
       
@@ -571,8 +768,7 @@ server <- function(input, output, session) {
         plot_ly(source = "dat_month", name =~Category, type='bar',
                 x = ~Month, y = ~n, color=~color, 
                 text=~Description, hoverinfo="text") %>% 
-        # add_bars(width=1000*3600*30*3) %>%
-        layout(bargap=0.2,barmode=my_barmode, annotations=title_style,
+        layout(barmode=my_barmode, annotations=title_style,
                yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01"),paste0(yyear,"-12")),title='Month', 
                                       rangeslider=list(type="date",range=c(paste0(yyear,"-01"),paste0(yyear,"-12"))), visible=T))
       
@@ -581,6 +777,7 @@ server <- function(input, output, session) {
         return(pic_month)
       }
       pc
+      
     })
     
     output$dat_daily <- renderPlotly({
@@ -596,15 +793,17 @@ server <- function(input, output, session) {
       mmonth <- sd$Month[1] %>% substr(1, 7)
       # sd3 <- SharedData$new(sd)
       
-      k <- sd %>% count(Category,StartDate,color)
+      k <- sd %>% count(StartDate,Category,color)
       k$Description <- paste0("Date: ",k$StartDate, 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
       
       #Default:group bar charts & abs # of encounters
-      yaxi=list(title='Encounter', visible=T); my_barmode='group'
+      yaxi=list(title='Encounter', visible=T); my_barmode='group'; title=paste0("Encounters by Day (Month ", mmonth,")")
       
-      # consider 4 different scenarios
+      # k_ori <<- k
+      
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -618,11 +817,105 @@ server <- function(input, output, session) {
         yaxi=list(title='Percentage per Day', visible=T,tickformat = "%")
       }
       
+      ##############
+      ##############
+      ##Make Comparison - Day
+      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
+      if(input$show_comp == TRUE){
+        
+        first_else=0; k$comp=0; flag=0 
+        for(i in 1:nrow(k)){
+          yr_new=k$StartDate[i]
+          #1st if - only run in the 1st i 
+          if(i==1) {yr=k$StartDate[i]; info_new=c(); info=c()} 
+          
+          #2nd if - only run in the last i
+          if(i==nrow(k)) {
+            yr=k$StartDate[i]-1  #make it bypass the third if and go to else
+            if(flag==0){
+              info[k$Category[i]]=k$n[i]
+            }else{
+              info_new[k$Category[i]]=k$n[i]
+            }
+          }
+          
+          #3rd big if  
+          if(yr_new==yr) {
+            if(flag==0){
+              info[k$Category[i]]=k$n[i]
+            }else{
+              info_new[k$Category[i]]=k$n[i]
+            }
+            
+          }else { # for making comparison (& if two days don't match, move to store in new days)
+            yr=k$StartDate[i]
+            if(flag==0) {  # 0->1
+              info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that day
+              info=c()                          # set it to default
+              info_new[k$Category[i]]=k$n[i]; flag=1  #"even" day - info_new (flag=1)
+              
+            }else{         # 1->0
+              info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that day
+              info_new=c()                      # set it to default
+              info[k$Category[i]]=k$n[i]; flag=0      #"odd" day - info (flag=0)
+            }
+            
+            if(first_else==1){  # starting from the 2nd time of unmatch of two days, run the following code chunk
+              if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
+                info_even[!(names(info_even) %in% names(info_odd))]=0
+                info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
+                              info_even[!(names(info_even) %in% names(info_odd))])
+                #Arrange the list in target order
+                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                if(i!=nrow(k)){
+                  k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                }else{  # account for the different scenario in the last day
+                  k$comp[(i-length(info_comp)+1):i]=tmp  
+                }
+                
+                info_even=info_evenk  # undo the change made to info_even
+              }else{    # [odd-even]
+                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
+                              info_odd[!(names(info_odd) %in% names(info_even))])
+                #Arrange the list in target order
+                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                if(i!=nrow(k)){
+                  k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                }else{    # account for the different scenario in the last day
+                  k$comp[(i-length(info_comp)+1):i]=tmp  
+                }
+                info_odd=info_oddk   # undo the change made to info_odd
+              }
+            }
+            first_else=1   
+          } # a big else 
+        }  # for loop
+        
+        k$n=k$comp  # override n to comp
+        
+        # show the text when hovered over
+        if(input$show_penc == TRUE){
+          k$Description <- paste0("Date: ",k$StartDate,
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",percent(k$n))
+        }else{
+          k$Description <- paste0("Date: ",k$StartDate,
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",k$n)
+        }
+        title=paste0("Difference on Encounters from Two Consecutively-Recorded Days (Month ", mmonth,")")
+        # k <<- k
+        
+      }  # the input if
+      ## The end of the comparison
       
-      title_style <- list(text=paste0("Encounters by Day (Month ", mmonth,")"),xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+      title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
       
-      if(length(unique(k[,1]))) nr=nrow(k); k[nr+1,] = k[nr,]; k[nr+1,3]=k[nr,3]+10; k[nr+1,5]=0
+      
+      # when a month with entries only from one date, still show bars  
+      if(length(unique(k$StartDate))==1) {nr=nrow(k); k[nr+1,] = k[nr,]; k$StartDate[nr+1]=k$StartDate[nr]+10; k$n[nr+1]=0}
       
       sd3 <- SharedData$new(k)
       
