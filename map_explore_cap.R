@@ -411,6 +411,28 @@ ui <- fluidPage(
                br(),
                plotlyOutput("dat_daily", height = 300)
       ),
+      tabPanel("Detailed Evidence I try",
+               h3("MS Data Overview"),
+               column(width = 6,
+                      selectInput(inputId="patient_num2",
+                                  label="Select Patient Number: ",
+                                  choices=choices, 
+                                  selected = 1),
+                      # get rid of the extra line between two checkboxes
+                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+                      checkboxInput("show_stackbar2","Show Stacked Bar Charts ",FALSE),
+                      checkboxInput("show_penc2","Show percentage",FALSE),  # Abs encounters -> percentage
+                      checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
+               column(width = 6,
+                      selectInput(inputId="enco_type2",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
+               plotlyOutput("dat_all", height = 500),
+               uiOutput("back"),
+               plotlyOutput("dat_comp", height = 500)
+      ),
       tabPanel("Detailed Evidence II",
                h3("MS Data Overview"),
                column(width = 6,
@@ -436,7 +458,69 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
-  # For MS tabset
+  # For `Detailed Evidence I try` tabset
+  # for maintaining the state of drill-down variables
+  
+  ###  leverage `customdata` as a workaround
+  
+  
+  # when select a new patient, only show the annual overview
+  # observeEvent(input$patient_num2, {
+  #   dat_all(NULL)
+  # })
+  # 
+  # observeEvent(input$enco_type2,{
+  #   
+  #   output$dat_all <- renderPlotly({
+  #     id <- match(input$patient_num2, choices)   # choices=c(68286,99492,106579)
+  #     pat_encounter <- which(three_mss$PatientNum == choices[id])
+  #     
+  #     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
+  #     
+  #     select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
+  #     
+  #     years <- unique(select_df$Year)
+  #     months <- unique(select_df$Month)
+  #     days <- unique(select_df$StartDate)
+  # 
+  #     k <- select_df %>% count(Category,Year,color)
+  #     k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+  #                             "\nCategory: ",k$Category,
+  #                             "\nEncounter: ",k$n)
+  #     
+  #     #Default:group bar charts & abs # of encounters
+  #     yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"  
+  #     
+  #     title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+  #                         yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
+  #     
+  #     sd1 <- SharedData$new(k)
+  #     
+  #     pc <- sd1 %>%
+  #       plot_ly(source = "dat_all", name =~Category, # name of the legend
+  #               x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+  #               text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
+  #       #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+  #       layout(barmode=my_barmode, 
+  #              # title = "Encounters Aggregated by Year",
+  #              annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+  #              yaxis=yaxi,
+  #              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+  #     
+  #     
+  #     if (is.null(dat_all())) {
+  #       pic_year <<- pc
+  #       return(pic_year) 
+  #     } 
+  #     pc 
+  #     
+  #   })
+  # 
+  # }) 
+  #   
+  
+  
+  # For Detailed Evidence tabset
   # for maintaining the state of drill-down variables
   dat_year <- reactiveVal()
   dat_month <- reactiveVal()
@@ -456,7 +540,7 @@ server <- function(input, output, session) {
   
   # when select a new patient, only show the annual overview
   observeEvent(input$patient_num, {
-    dat_year(NULL)
+    dat_year(NULL) 
     dat_month(NULL)
     dat_daily(NULL)
   })
@@ -473,7 +557,7 @@ server <- function(input, output, session) {
       
       select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
       
-      k <- select_df %>% count(Category,Year,color)
+      k <- select_df %>% count(Year,Category,color)
       k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
                               "\nCategory: ",k$Category,
                               "\nEncounter: ",k$n)
@@ -482,7 +566,7 @@ server <- function(input, output, session) {
       yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"  
       
       
-      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -592,7 +676,6 @@ server <- function(input, output, session) {
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
       
-      
       sd1 <- SharedData$new(k)
       
       pc <- sd1 %>%
@@ -645,7 +728,7 @@ server <- function(input, output, session) {
       yaxi=list(title='Encounter', visible=T); my_barmode='group'; title=paste0("Encounters Aggregated by Month (Year ", yyear,")")
       
       
-      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
@@ -769,8 +852,8 @@ server <- function(input, output, session) {
                 x = ~Month, y = ~n, color=~color, 
                 text=~Description, hoverinfo="text") %>% 
         layout(barmode=my_barmode, annotations=title_style,
-               yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01"),paste0(yyear,"-12")),title='Month', 
-                                      rangeslider=list(type="date",range=c(paste0(yyear,"-01"),paste0(yyear,"-12"))), visible=T))
+               yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                                      rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))), visible=T))
       
       if (is.null(dat_month())) {
         pic_month <<- pc
@@ -803,7 +886,7 @@ server <- function(input, output, session) {
       
       # k_ori <<- k
       
-      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounteres; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
       if(input$show_penc == TRUE) {
         # percent
