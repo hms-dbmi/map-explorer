@@ -28,27 +28,28 @@ library(ECharts2Shiny)
 # Read in the data
 # `dat` contains the MAP probabilities for each individual patient across all diseases
 setwd("~/Desktop/Capstone")
-load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
-load("data/MAPcutoff.Rdata")       # 1866    2
-load("data/pheinfo.rda")           # 1814    5            
+# load("data/MAPmanhattan.Rdata")    # dataset name: dat, 4*1864; 
+# load("data/MAPcutoff.Rdata")       # 1866    2
 
-
-# Patient 5 and 6 are high in MS
+######
+## load the two required datasets in 
+load("data/pheinfo.rda")           # 1814    5; phecode info       
+# Patient 5 and 6 are high in MS  - new patient data
 load("data/sample_PheMAP.Rdata")   # dataset updated 07/09/2019. name: df, 1864*8  
 # format:  phecode pat1 pat2 pat3 pat4 pat5 pat6 cut.MAP
 
 
-
-
+### Easier to load csv than rda into Shiny
+# write_csv(pheinfo,'pheinfo.csv')    
+# write_csv(df,'sample_PheMAP.csv')
 
 # use_new_data=TRUE
 # if(use_new_data){...}
 
-
 phe_man <- df$phecode   # 1864, with 2 already filtered by Luwan; 
 
 # filter out phecodes with NA cutoff, with 2 NAs
-MAPcutoff_filteredNA <- MAPcutoff[!is.na(MAPcutoff$cutoff),]     # 1864    2
+# MAPcutoff_filteredNA <- MAPcutoff[!is.na(MAPcutoff$cutoff),]     # 1864    2
 
 # PheWAS group info summary
 groupinfo_df <- table(pheinfo$groupnum) %>% names %>% as.data.frame    # 17 groups (1-15, 17-18) 
@@ -106,12 +107,12 @@ for (i_indi in 2:(ncol(df)-1)){   # starting from the second columns
   
   # MAPcutoff_filteredNA: 1864  2
   # format the MAPcutoff_filteredNA file
-  MAPcutoff_filteredNA <- MAPcutoff_filteredNA %>% mutate(phecode = phecode %>% str_replace('_','.') %>% as.character)
-  for (i in 1:length(MAPcutoff_filteredNA$phecode)){
-    if(MAPcutoff_filteredNA$phecode[i] %>% str_sub(.,start=nchar(.)) == ".") {
-      MAPcutoff_filteredNA$phecode[i]  <- substr(MAPcutoff_filteredNA$phecode[i], 1, nchar(MAPcutoff_filteredNA$phecode[i])-1)
-    }
-  }
+  # MAPcutoff_filteredNA <- MAPcutoff_filteredNA %>% mutate(phecode = phecode %>% str_replace('_','.') %>% as.character)
+  # for (i in 1:length(MAPcutoff_filteredNA$phecode)){
+  #   if(MAPcutoff_filteredNA$phecode[i] %>% str_sub(.,start=nchar(.)) == ".") {
+  #     MAPcutoff_filteredNA$phecode[i]  <- substr(MAPcutoff_filteredNA$phecode[i], 1, nchar(MAPcutoff_filteredNA$phecode[i])-1)
+  #   }
+  # }
   
   # extract list of significant phecodes for each individual patient 
   # Assume that it would be common that there would be NAs in individual patient's data (phe_man_indiv1) ; 
@@ -316,33 +317,52 @@ ui <- fluidPage(
   
   sidebarPanel(
     h4("You can explore the MAP data in this Shiny App!"),    
-    selectInput(inputId="individual_id",
-                label="Select Patient ID: ",
-                choices=c(1:(ncol(df)-2)), 
-                # choices=c(1:nrow(dat)), 
-                selected = 1, selectize = F),
-    plotlyOutput("bar"),
-    
+    tabsetPanel(
+      
+      tabPanel("Explore",
+               conditionalPanel(
+                 condition= "ncol(df)>0",
+                 selectInput(inputId="individual_id",
+                             label="Select Patient ID: ",
+                             choices=c(1:(ncol(df)-2)), 
+                             # choices=c(1:nrow(dat)), 
+                             selected = 1, selectize = F),
+                 plotlyOutput("bar")
+               )
+      ),
+      
+      tabPanel("File upload",
+               h4("You can upload your own data files here!"),
+               fileInput(inputId = "file1",
+                         label = "Choose file for Phecode info:",
+                         multiple = F,
+                         buttonLabel = "Browse...",
+                         placeholder = "No file selected"),
+               fileInput(inputId = "file2"
+                         , label = "Choose file for Patients and MAP cutoff:"
+                         , multiple = F
+                         , buttonLabel = "Browse..."
+                         , placeholder = "No file selected"),
+               fileInput(inputId = "file3"
+                         , label = "Choose file for encounters of MS patient:"
+                         , multiple = F
+                         , buttonLabel = "Browse..."
+                         , placeholder = "No file selected"),
+               fileInput(inputId = "file4"
+                         , label = "Choose file for Vitamin D values:"
+                         , multiple = F
+                         , buttonLabel = "Browse..."
+                         , placeholder = "No file selected")
+               
+      )
+    ),
     h3("How to use"),
     p("The default visualization shows the results for Patient 1.
       You can also select any Patient ID from the dropdown list.
       Then it would output a barchart showing the information of the proportion of the phecodes above threshold in each PheWAS group of this individual patient.
       It would also output a Manhattan plot showing the MAP probabilities of each phecodes of this selected patient.
       You can hover over the points in Manhattan plot or Barchart to get more information.
-      Enjoy playing around with it!"),
-    
-    br(),
-    h4("You can also upload your own data files here!"), 
-    fileInput(inputId = "file1"
-              , label = "Chooose file for Phecode info:"
-              , multiple = F
-              , buttonLabel = "Browse..."
-              , placeholder = "No file selected"),
-    fileInput(inputId = "file2"
-              , label = "Chooose file for Patients and MAP cutoff:"
-              , multiple = F
-              , buttonLabel = "Browse..."
-              , placeholder = "No file selected")
+      Enjoy playing around with it!")
     ),
   
   mainPanel(
@@ -350,8 +370,10 @@ ui <- fluidPage(
     tabsetPanel(
       tabPanel("Main",
                h3("MAP Manhattan Plot"),
-               fluidRow(
-                 plotlyOutput("plot",height = 500))
+               conditionalPanel(
+                 condition= "ncol(df)>0",
+                 fluidRow(
+                   plotlyOutput("plot",height = 500))  )# for conditionalPanel
                # br(),
                # textOutput("sig_tab"),
                # br(),
@@ -366,16 +388,18 @@ ui <- fluidPage(
                
       ),
       tabPanel("Info Table",
-               textOutput("sig_tab"),
-               br(),
-               textOutput("cond_num"),     #report number of phecodes above threshold
-               textOutput("brush"),        #report number of phecodes both above threshold and selected
-               br(),
-               checkboxInput("details","More details (with MAP cutoff):",FALSE),
-               DT::DTOutput("panel"),
-               tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-               tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-               tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))
+               conditionalPanel(
+                 condition= "ncol(df)>0",
+                 textOutput("sig_tab"),
+                 br(),
+                 textOutput("cond_num"),     #report number of phecodes above threshold
+                 textOutput("brush"),        #report number of phecodes both above threshold and selected
+                 br(),
+                 checkboxInput("details","More details (with MAP cutoff):",FALSE),
+                 DT::DTOutput("panel"),
+                 tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+                 tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+                 tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))   )
       ),
       
       tabPanel("Word Cloud",
@@ -383,80 +407,90 @@ ui <- fluidPage(
                # for Word Cloud
                # MUST load the ECharts javascript library in advance
                loadEChartsLibrary(),
-               tags$div(id="wordcloud", style="width:100%;height:500px;"),
-               deliverChart(div_id = "wordcloud")
+               conditionalPanel(
+                 condition= "ncol(df)>0",
+                 tags$div(id="wordcloud", style="width:100%;height:500px;"),
+                 deliverChart(div_id = "wordcloud")    )
                
       ),
       tabPanel("Detailed Evidence",
                h3("MS Data Overview"),
-               column(width = 6,
-                      selectInput(inputId="patient_num",
-                                  label="Select Patient Number: ",
-                                  choices=choices, 
-                                  selected = 1),
-                      # get rid of the extra line between two checkboxes
-                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-                      checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
-                      checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
-                      checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)), 
-               column(width = 6,
-                      selectInput(inputId="enco_type",
-                                  label="Select Encounter type(s): ",
-                                  choices=unique(three_mss$Category), multiple = T,
-                                  selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(),
-               plotlyOutput("dat_year", height = 300),
-               br(),
-               plotlyOutput("dat_month", height = 300),
-               br(),
-               plotlyOutput("dat_daily", height = 300)
+               conditionalPanel(
+                 condition= "ncol(three_mss)>0",
+                 column(width = 6,
+                        selectInput(inputId="patient_num",
+                                    label="Select Patient Number: ",
+                                    choices=choices, 
+                                    selected = 1),
+                        # get rid of the extra line between two checkboxes
+                        tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+                        checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
+                        checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
+                        checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)), 
+                 column(width = 6,
+                        selectInput(inputId="enco_type",
+                                    label="Select Encounter type(s): ",
+                                    choices=unique(three_mss$Category), multiple = T,
+                                    selected = unique(three_mss$Category))),
+                 br(), br(), br(), br(), br(), br(), br(),
+                 plotlyOutput("dat_year", height = 300),
+                 br(),
+                 plotlyOutput("dat_month", height = 300),
+                 br(),
+                 plotlyOutput("dat_daily", height = 300) )
       ),
       tabPanel("Detailed Evidence II",
                h3("MS Data Overview"),
-               column(width = 6,
-                      selectInput(inputId="patient_num2",
-                                  label="Select Patient Number: ",
-                                  choices=choices, 
-                                  selected = 1),
-                      # get rid of the extra line between two checkboxes
-                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-                      checkboxInput("show_stackbar2","Show Stacked Bar Charts ",FALSE),
-                      checkboxInput("show_penc2","Show percentage",FALSE)),  # Abs encounters -> percentage
-               # checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
-               column(width = 6,
-                      selectInput(inputId="enco_type2",
-                                  label="Select Encounter type(s): ",
-                                  choices=unique(three_mss$Category), multiple = T,
-                                  selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(),
-               uiOutput("history"),
-               plotlyOutput("dat_all", height = 300),br(),
-               plotlyOutput("dat_comp", height = 300)
+               conditionalPanel(
+                 condition= "ncol(three_mss)>0",
+                 column(width = 6,
+                        selectInput(inputId="patient_num2",
+                                    label="Select Patient Number: ",
+                                    choices=choices, 
+                                    selected = 1),
+                        # get rid of the extra line between two checkboxes
+                        tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+                        checkboxInput("show_stackbar2","Show Stacked Bar Charts ",FALSE),
+                        checkboxInput("show_penc2","Show percentage",FALSE)),  # Abs encounters -> percentage
+                 # checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
+                 column(width = 6,
+                        selectInput(inputId="enco_type2",
+                                    label="Select Encounter type(s): ",
+                                    choices=unique(three_mss$Category), multiple = T,
+                                    selected = unique(three_mss$Category))),
+                 br(), br(), br(), br(), br(), br(), br(),
+                 uiOutput("history"),
+                 plotlyOutput("dat_all", height = 300),br(),
+                 plotlyOutput("dat_comp", height = 300)    )
       ),
       tabPanel("Detailed Evidence III",
                h3("MS Data Overview"),
-               column(width = 6,
-                      selectInput(inputId="patient_vd_num",
-                                  label="Select Patient Number: ",
-                                  choices=choices, 
-                                  selected = 1)), # modify the size of the input box
-               column(width = 6,
-                      selectInput(inputId="enco_vd_type",
-                                  label="Select Encounter type(s): ",
-                                  choices=unique(three_mss$Category), multiple = T,
-                                  selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(),
-               h4("Encounters by Day"),
-               plotlyOutput("all_six", height = 600),
-               br(),
-               h4("Vitamin D Levels"),
-               plotlyOutput("vitd"))
+               conditionalPanel(
+                 condition= "ncol(three_mss)>0",
+                 column(width = 6,
+                        selectInput(inputId="patient_vd_num",
+                                    label="Select Patient Number: ",
+                                    choices=choices, 
+                                    selected = 1)), # modify the size of the input box
+                 column(width = 6,
+                        selectInput(inputId="enco_vd_type",
+                                    label="Select Encounter type(s): ",
+                                    choices=unique(three_mss$Category), multiple = T,
+                                    selected = unique(three_mss$Category))),
+                 br(), br(), br(), br(), br(), br(), br(),
+                 h4("Encounters by Day"),
+                 plotlyOutput("all_six", height = 600),
+                 br(),
+                 h4("Vitamin D Levels"),
+                 plotlyOutput("vitd"))    )
     ) # for tabsetPanel
     
   )) # ")" for mainPanel & fluidPage
 
 
 server <- function(input, output, session) {
+  
+  
   
   # For `Detailed Evidence II - or try` tabset
   # These reactive values keep track of the drilldown state
@@ -473,7 +507,6 @@ server <- function(input, output, session) {
     # observeEvent(event_data("plotly_click", source = "dat_all"), {
     x <- event_data("plotly_click")$x
     # x <- event_data("plotly_click", source = "dat_all")$x
-    # cat(x); cat('\n')
     if (!length(x)) return()
     
     if (!length(drills$current_yr)) {
@@ -483,6 +516,9 @@ server <- function(input, output, session) {
     } 
   })
   
+  
+  ####################
+  ## Two output plots in this observeEvent: output$dat_all, output$dat_comp
   observeEvent(input$enco_type2,{
     # data pre-processing shared by all
     id <- match(input$patient_num2, choices)
@@ -494,14 +530,15 @@ server <- function(input, output, session) {
     all_yr <- unique(k$Year)       #categories
     all_month <- unique(k$Month)   #sub_categories
     
-    
-    
     ##########################
     # the bar chart (dat_all)
     output$dat_all <- renderPlotly({
       yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year" 
       yyear= str_sub(drills$current_yr,1,4)
       mmonth=str_sub(drills$current_month,1,7)
+      
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
+      if(input$show_stackbar2 == TRUE) my_barmode='stack'   # for all three scenarios (yr/month/day)
       
       if (!length(drills$current_yr)) {
         
@@ -511,6 +548,18 @@ server <- function(input, output, session) {
                                  "\nCategory: ",k1$Category,
                                  "\nEncounter: ",k1$n)
         
+        if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
+          ### percent
+          # k1 here corresponds to k in `Detailed Evidence` section
+          # k here corresponds to select_df
+          k_new = k %>% count(Year)
+          k_lj=left_join(k1,k_new,by="Year")
+          k1$n = k_lj$n.x/k_lj$n.y; 
+          k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+                                   "\nCategory: ",k1$Category,
+                                   "\nPercentage: ",percent(k1$n))
+          yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+        }
         
         title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                             yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
@@ -532,6 +581,19 @@ server <- function(input, output, session) {
         k1$Description <- paste0("Year: ",str_sub(k1$Month,1,7), 
                                  "\nCategory: ",k1$Category,
                                  "\nEncounter: ",k1$n)
+        
+        if(input$show_penc2 == TRUE) {
+          ### percent
+          # k1 here corresponds to k in `Detailed Evidence` section
+          # k here corresponds to select_df
+          k_new = k %>% count(Month)
+          k_lj=left_join(k1,k_new,by="Month")
+          k1$n = k_lj$n.x/k_lj$n.y; 
+          k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+                                   "\nCategory: ",k1$Category,
+                                   "\nPercentage: ",percent(k1$n))
+          yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+        }    
         
         if(length(unique(k1$Month))==1) {nr=nrow(k1); k1[nr+1,] = k1[nr,]; k1$Month[nr+1]=k1$Month[nr]+10; k1$n[nr+1]=0}
         
@@ -559,6 +621,19 @@ server <- function(input, output, session) {
         k1$Description <- paste0("Year: ",k1$StartDate,
                                  "\nCategory: ",k1$Category,
                                  "\nEncounter: ",k1$n)
+        
+        if(input$show_penc2 == TRUE) {
+          ### percent
+          # k1 here corresponds to k in `Detailed Evidence` section
+          # k here corresponds to select_df
+          k_new = k %>% count(StartDate)
+          k_lj=left_join(k1,k_new,by="StartDate")
+          k1$n = k_lj$n.x/k_lj$n.y; 
+          k1$Description <- paste0("Date: ",k1$StartDate, 
+                                   "\nCategory: ",k1$Category,
+                                   "\nPercentage: ",percent(k1$n))
+          yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+        }   
         
         if(length(unique(k1$StartDate))==1) {nr=nrow(k1); k1[nr+1,] = k1[nr,]; k1$StartDate[nr+1]=k1$StartDate[nr]+10; k1$n[nr+1]=0}
         
@@ -595,13 +670,32 @@ server <- function(input, output, session) {
       
       target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
       
+      # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
+      if(input$show_stackbar2 == TRUE) my_barmode='stack'   # for all three scenarios (yr/month/day)
+      
       if (!length(drills$current_yr)) {
         # data-preprocessing
-        k=count(k,Year,Category,color) 
-        k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
-                                "\nCategory: ",k$Category,
-                                "\nEncounter: ",k$n)
+        k1=count(k,Year,Category,color) 
+        k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+                                 "\nCategory: ",k1$Category,
+                                 "\nEncounter: ",k1$n)
         
+        if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
+          ### percent
+          # k1 here corresponds to k in `Detailed Evidence` section
+          # k here corresponds to select_df
+          k_new = k %>% count(Year)
+          k_lj=left_join(k1,k_new,by="Year")
+          k1$n = k_lj$n.x/k_lj$n.y; 
+          k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+                                   "\nCategory: ",k1$Category,
+                                   "\nPercentage: ",percent(k1$n))
+          yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+        }
+        
+        k = k1  # tailor for the use of comparison
+        
+        ### Comparison in years
         first_else=0; k$comp=0; flag=0 
         for(i in 1:nrow(k)){
           yr_new=k$Year[i]
@@ -689,11 +783,25 @@ server <- function(input, output, session) {
         pc
       } else if(!length(drills$current_month)){
         
-        k <- filter(k,Year == drills$current_yr)
-        k = k %>% count(Month,Category,color) 
-        k$Description <- paste0("Year: ",str_sub(k$Month,1,7), 
-                                "\nCategory: ",k$Category,
-                                "\nEncounter: ",k$n)
+        k1 <- filter(k,Year == drills$current_yr)
+        k1 = k1 %>% count(Month,Category,color) 
+        k1$Description <- paste0("Year: ",str_sub(k1$Month,1,7), 
+                                 "\nCategory: ",k1$Category,
+                                 "\nEncounter: ",k1$n)
+        
+        if(input$show_penc2 == TRUE) {
+          ### percent
+          k_new = k %>% count(Month)
+          k_lj=left_join(k1,k_new,by="Month")
+          k1$n = k_lj$n.x/k_lj$n.y; 
+          k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+                                   "\nCategory: ",k1$Category,
+                                   "\nPercentage: ",percent(k1$n))
+          yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+          
+        } 
+        
+        k=k1 #tailor for the use of comparison
         
         #################
         ##Make Comparison - Month
@@ -789,12 +897,27 @@ server <- function(input, output, session) {
         
       }else {
         # data-preprocessing
-        k <- filter(k,Month == drills$current_month)
+        k1 <- filter(k,Month == drills$current_month)
         # k <- filter(k,Year == drills$current_yr,Month == drills$current_month)
-        k = k %>% count(StartDate,Category,color)
-        k$Description <- paste0("Year: ",k$StartDate,
-                                "\nCategory: ",k$Category,
-                                "\nEncounter: ",k$n)
+        k1 = k1 %>% count(StartDate,Category,color)
+        k1$Description <- paste0("Year: ",k1$StartDate,
+                                 "\nCategory: ",k1$Category,
+                                 "\nEncounter: ",k1$n)
+        
+        if(input$show_penc2 == TRUE) {
+          ### percent
+          k_new = k %>% count(StartDate)
+          k_lj=left_join(k1,k_new,by="StartDate")
+          k1$n = k_lj$n.x/k_lj$n.y; 
+          k1$Description <- paste0("Date: ",k1$StartDate, 
+                                   "\nCategory: ",k1$Category,
+                                   "\nPercentage: ",percent(k1$n))
+          yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
+          
+        }   
+        
+        k=k1 #tailor for the use of comparison
+        
         ##############
         ##Make Comparison - Day
         first_else=0; k$comp=0; flag=0 
@@ -1328,7 +1451,10 @@ server <- function(input, output, session) {
                               "\nEncounter: ",k$n)
       
       #Default:group bar charts & abs # of encounters
-      yaxi=list(title='Encounter', visible=T); my_barmode='group'; title=paste0("Encounters by Day (Month ", mmonth,")")
+      yaxi=list(title='Encounter', visible=T); my_barmode='group'; 
+      yr=str_sub(mmonth,1,4); mo=str_sub(mmonth,6,7) %>% as.numeric %>% month.abb[.]
+      title=paste0("Encounters by Day (Month: ",mo,', ',yr,")")
+      # title=paste0("Encounters by Day (Month ", mmonth,")")
       
       # k_ori <<- k
       
@@ -1473,7 +1599,7 @@ server <- function(input, output, session) {
   
   
   ###############
-  # the bar chart
+  # the bar chart in the sidebarPanel
   x = factor(ratio_df$group)   
   x = factor(x,levels(x)[c(8,12,5,7,10,13,16,1,15,4,6,14,3,11,2,17,9)])    #reorder factor levels
   
@@ -1731,8 +1857,7 @@ server <- function(input, output, session) {
     
     phegrp_highlight <- event_data("plotly_click", source = "bar")$x
     
-    # Try to fix a minor problem (has to move the window a little bit to make wordcloud display
-    # just initially move it a little bit, then it's fine)
+    # fix a minor problem so that users don't have to move the window a little bit to make wordcloud display
     if(is.null(event_data("plotly_relayout", source = "plot"))){
       
       mat <- match(input$individual_id,1:(ncol(df)-2))
