@@ -1613,6 +1613,8 @@ server <- function(input, output, session) {
   
   output$bar <- renderPlotly({
     
+    phegrp_highlight <- event_data("plotly_click", source = "bar")$x
+    
     mat <- match(input$individual_id,1:(ncol(df)-2))
     # mat <- match(input$individual_id,1:nrow(dat)) 
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1 
@@ -1650,26 +1652,54 @@ server <- function(input, output, session) {
     
     bar_order <<- ratio_df %>% .$Groupnum
     
-    tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
-      geom_bar(stat="identity",fill = ratio_df$color) +
+    # if clicked on the xth bar, only that bar will be highlighted, the rest will grey out(in this case become more transparent)
+    if(!is.null(phegrp_highlight)){
+      #phegrp_highlight is the xth clicked bar after the desc order
+      subratio_df <- mutate(ratio_df,Proportion_abv_thrh=ifelse(rownames(ratio_df)==phegrp_highlight,Proportion_abv_thrh,0))
       
-      ggtitle ("Proportion of phecodes above threshold") +
-      ylab("Proportion") +
-      scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
-      scale_x_discrete(name = "", labels=ratio_df$group) +
-      
-      theme_bw() + 
-      theme(
-        legend.position="none",
-        panel.border = element_blank(),
-        panel.grid.major.x = element_blank(),
-        panel.grid.minor.x = element_blank(),
-        axis.title.y = element_text(size=8),   # family = "sans",
-        axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
-        plot.title = element_text(size = 8),
-        panel.background = element_rect(fill = "transparent",colour = NA),   # These two rows make the background of the barchart transparent
-        plot.background = element_rect(fill = "transparent",colour = NA)) 
-    
+      tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
+        # Show all bars
+        geom_bar(stat="identity",fill = ratio_df$color,alpha=0.25) +
+        # Add highlighted bar
+        geom_bar(data=subratio_df,stat="identity",fill = ratio_df$color[phegrp_highlight]) +
+        
+        ggtitle ("Proportion of phecodes above threshold") +
+        ylab("Proportion") +
+        scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+        scale_x_discrete(name = "", labels=ratio_df$group) +
+        
+        theme_bw() + 
+        theme(
+          legend.position="none",
+          panel.border = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.title.y = element_text(size=8),   # family = "sans",
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          plot.title = element_text(size = 8),
+          panel.background = element_rect(fill = "transparent",colour = NA),   # These two rows make the background of the barchart transparent
+          plot.background = element_rect(fill = "transparent",colour = NA)) 
+    }else{
+      tmp <- ggplot(ratio_df, aes(x=x, y=Proportion_abv_thrh, text = description)) + 
+        geom_bar(stat="identity",fill = ratio_df$color) +
+        
+        ggtitle ("Proportion of phecodes above threshold") +
+        ylab("Proportion") +
+        scale_y_continuous(expand = c(0, 0), limits = c(0,max(ratio_df$Proportion_abv_thrh)+0.05)) +
+        scale_x_discrete(name = "", labels=ratio_df$group) +
+        
+        theme_bw() + 
+        theme(
+          legend.position="none",
+          panel.border = element_blank(),
+          panel.grid.major.x = element_blank(),
+          panel.grid.minor.x = element_blank(),
+          axis.title.y = element_text(size=8),   # family = "sans",
+          axis.text.x = element_text(angle = 45, hjust = 1, size = 6.5),
+          plot.title = element_text(size = 8),
+          panel.background = element_rect(fill = "transparent",colour = NA),   # These two rows make the background of the barchart transparent
+          plot.background = element_rect(fill = "transparent",colour = NA)) 
+    }
     ggplotly(tmp,tooltip="text",source="bar")
     # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
     
