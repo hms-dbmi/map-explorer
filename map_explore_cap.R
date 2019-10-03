@@ -484,6 +484,7 @@ ui <- fluidPage(
                  plotlyOutput("all_six", height = 600),
                  br(),
                  h4("Vitamin D Levels"),
+                 checkboxInput("show_trend","Show the trend in a line graph",FALSE),
                  plotlyOutput("vitd"))    )
     ) # for tabsetPanel
     
@@ -1996,15 +1997,25 @@ server <- function(input, output, session) {
              yref      = "y")
     }
     
-    pc <- sd1 %>%
-      plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
-              type="scatter", mode="markers",   
-              text=~description, hoverinfo="text") %>%  
-      hide_legend() %>%
-      layout(yaxis=list(title='Vitamin D values', visible=T), 
-             xaxis=list(title='Year', rangeslider=list(type="date"), visible=T),
-             shapes=line_list)  # add vertical lines under each marker
-    
+    if(input$show_trend == TRUE){
+      pc <- sd1 %>%
+        plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
+                type="scatter", mode='markers', 
+                text=~description, hoverinfo="text") %>%  
+        add_lines(x = ~StartDate, y = ~Value, name = "hv",colors="#FC8D62",alpha=0.4) %>%
+        hide_legend() %>%
+        layout(yaxis=list(title='Vitamin D values', visible=T), 
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+    }else{
+      pc <- sd1 %>%
+        plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
+                type="scatter", mode="markers",   
+                text=~description, hoverinfo="text") %>%  
+        hide_legend() %>%
+        layout(yaxis=list(title='Vitamin D values', visible=T), 
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T),
+               shapes=line_list)  # add vertical lines under each marker
+    }
     pc 
     
   })
