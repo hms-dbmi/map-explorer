@@ -1661,7 +1661,7 @@ server <- function(input, output, session) {
         # Show all bars
         geom_bar(stat="identity",fill = ratio_df$color,alpha=0.25) +
         # Add highlighted bar
-        geom_bar(data=subratio_df,stat="identity",fill = ratio_df$color[phegrp_highlight]) +
+        geom_bar(data=subratio_df,stat="identity",fill = subratio_df$color[phegrp_highlight]) +
         
         ggtitle ("Proportion of phecodes above threshold") +
         ylab("Proportion") +
