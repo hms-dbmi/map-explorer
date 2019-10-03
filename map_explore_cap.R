@@ -306,6 +306,8 @@ pat_encounter_3 <- which(three_mss$PatientNum == "106579")
 choices <- unique(three_mss$PatientNum)
 
 
+# !diagnostics off     #disable 
+
 ###########
 ## Capstone project
 # shiny app
@@ -668,8 +670,6 @@ server <- function(input, output, session) {
       yyear= str_sub(drills$current_yr,1,4)
       mmonth=str_sub(drills$current_month,1,7)
       
-      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
-      
       # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
       if(input$show_stackbar2 == TRUE) my_barmode='stack'   # for all three scenarios (yr/month/day)
       
@@ -739,7 +739,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{  # account for the different scenario in the last yr
@@ -752,7 +753,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{    # account for the different scenario in the last yr
@@ -848,7 +850,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{  # account for the different scenario in the last month
@@ -861,7 +864,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{    # account for the different scenario in the last month
@@ -963,7 +967,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{  # account for the different scenario in the last day
@@ -976,7 +981,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{    # account for the different scenario in the last day
@@ -1153,7 +1159,6 @@ server <- function(input, output, session) {
       ##############
       ##############
       ##Make Comparison - Year
-      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
       if(input$show_comp == TRUE){
         
         first_else=0; k$comp=0; flag=0 
@@ -1199,7 +1204,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{  # account for the different scenario in the last yr
@@ -1212,7 +1218,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{    # account for the different scenario in the last yr
@@ -1317,7 +1324,6 @@ server <- function(input, output, session) {
       ##############
       ##############
       ##Make Comparison - month
-      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
       if(input$show_comp == TRUE){
         
         first_else=0; k$comp=0; flag=0 
@@ -1363,7 +1369,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{  # account for the different scenario in the last month
@@ -1376,7 +1383,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{    # account for the different scenario in the last month
@@ -1475,7 +1483,6 @@ server <- function(input, output, session) {
       ##############
       ##############
       ##Make Comparison - Day
-      target=c('Brain MRI CPT','Brain MRI CUI','MS CUI','MS ICD','Relapse CUI','Vitamin D CUI')
       if(input$show_comp == TRUE){
         
         first_else=0; k$comp=0; flag=0 
@@ -1521,7 +1528,8 @@ server <- function(input, output, session) {
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{  # account for the different scenario in the last day
@@ -1534,7 +1542,7 @@ server <- function(input, output, session) {
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
+                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
                 }else{    # account for the different scenario in the last day
