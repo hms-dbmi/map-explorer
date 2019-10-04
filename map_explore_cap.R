@@ -1991,10 +1991,9 @@ server <- function(input, output, session) {
              opacity   = 0.5,
              x0        = three_ms_vd[pat_encounter,]$StartDate[i],
              x1        = three_ms_vd[pat_encounter,]$StartDate[i],
-             xref      = "x",
              y0        = 0, 
-             y1        = three_ms_vd[pat_encounter,]$Value[i],
-             yref      = "y")
+             y1        = three_ms_vd[pat_encounter,]$Value[i])
+      
     }
     
     if(input$show_trend == TRUE){
@@ -2004,8 +2003,8 @@ server <- function(input, output, session) {
                 text=~description, hoverinfo="text") %>%  
         add_lines(x = ~StartDate, y = ~Value, name = "hv",colors="#FC8D62",alpha=0.4) %>%
         hide_legend() %>%
-        layout(yaxis=list(title='Vitamin D values', visible=T), 
-               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+        layout(yaxis=list(title='Vitamin D values', visible=T,rangemode = "tozero"), 
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T,zeroline=T,showline=T))
     }else{
       pc <- sd1 %>%
         plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
@@ -2013,13 +2012,16 @@ server <- function(input, output, session) {
                 text=~description, hoverinfo="text") %>%  
         hide_legend() %>%
         layout(yaxis=list(title='Vitamin D values', visible=T), 
-               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T),
+               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T) ,
                shapes=line_list)  # add vertical lines under each marker
     }
     pc 
     
   })
   
+  
+  
+  ### The six subplots
   observeEvent(input$enco_vd_type,{
     output$all_six <- renderPlotly({
       
@@ -2030,8 +2032,8 @@ server <- function(input, output, session) {
         dtick = 1,
         ticklen = 1,
         tickwidth = 1,
-        tickcolor = toRGB("grey")
-        #title='Encounters'
+        tickcolor = toRGB("grey") #,
+        # title='Encounters'
       )
       
       id <- match(input$patient_vd_num, choices)
@@ -2039,28 +2041,94 @@ server <- function(input, output, session) {
       
       keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_vd_type]
       
-      sd1 <-three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
-        filter(Category %in% keep_category) %>%
-        transform(id = as.integer(factor(Category))) %>%
-        arrange(id) 
-      
-      pc <- sd1 %>%
-        plot_ly(name =~Category,
+      panel <- . %>% 
+        plot_ly(name=~Category,  # set the name of the legend
                 x = ~StartDate, y = ~Encounter, color=~color,
-                text=~Description, hoverinfo="text",
-                yaxis = ~paste0("y", id)) %>%
+                text=~Description, hoverinfo="text") %>%
         # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
         add_bars(width=1000*3600*30) %>%    # set consistent bar width
-        layout(bargap = 0.05,   # set bar gap
+        layout(showlegend = T,
+               bargap = 0.05,   # set bar gap
                yaxis=ay,
-               xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
-        subplot(nrows = 6, shareX = TRUE,
-                margin = 0.03) 
+               xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T),
+               shapes = list(
+                 type = "rect",
+                 x0 = 0,
+                 x1 = 1,
+                 xref = "paper",
+                 y0 = 0, 
+                 y1 = 16,
+                 yanchor = 1,
+                 yref = "paper",
+                 ysizemode = "pixel",
+                 fillcolor = toRGB("gray80"),
+                 line = list(color = "transparent")
+               )) %>%  #add rangeslider
+        add_annotations(
+          text = ~unique(Category),
+          x = 0.5,
+          y = 1,
+          yref = "paper",
+          xref = "paper",
+          yanchor = "bottom",
+          showarrow = FALSE,
+          font = list(size = 12)
+        )
+      
+      pc <- three_mss[pat_encounter,] %>%      #three_mss[pat_encounter,c(1,3,5,6,7,10)] %>%
+        filter(Category %in% keep_category) %>%
+        group_by(Category) %>%
+        do(p = panel(.)) %>%
+        subplot(nrows = NROW(.), shareX = TRUE)
       
       pc
     })
     
   })
+  
+  
+  # ### The six subplots - prototype
+  # observeEvent(input$enco_vd_type,{
+  #   output$all_six <- renderPlotly({
+  #     
+  #     ay <- list(               # set up for the yaxis
+  #       autotick = FALSE,
+  #       ticks = "outside",
+  #       tick0 = 0,
+  #       dtick = 1,
+  #       ticklen = 1,
+  #       tickwidth = 1,
+  #       tickcolor = toRGB("grey") #,
+  #       # title='Encounters'
+  #     )
+  #     
+  #     id <- match(input$patient_vd_num, choices)
+  #     pat_encounter <- which(three_mss$PatientNum == choices[id])
+  #     
+  #     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_vd_type]
+  #     
+  #     sd1 <-three_mss[pat_encounter,] %>%      
+  #       filter(Category %in% keep_category) %>%
+  #       transform(id = as.integer(factor(Category))) %>%
+  #       arrange(id) 
+  #     
+  #     pc <- sd1 %>%
+  #       plot_ly(name =~Category,  # set the name of the legend
+  #               x = ~StartDate, y = ~Encounter, color=~color,
+  #               text=~Description, hoverinfo="text",
+  #               yaxis = ~paste0("y", id)) %>%
+  #       # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
+  #       add_bars(width=1000*3600*30) %>%    # set consistent bar width
+  #       layout(bargap = 0.05,   # set bar gap
+  #              yaxis=ay,
+  #              xaxis=list(title='Date',rangeslider=list(type="date", thickness=0.05), visible=T)) %>%  #add rangeslider
+  #       subplot(nrows = 6, shareX = TRUE, 
+  #               margin = 0.03) 
+  #     
+  #     pc
+  #   })
+  #   
+  # })
   
   
 }
