@@ -742,12 +742,14 @@ server <- function(input, output, session) {
       # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
       if(input$show_stackbar2 == TRUE) my_barmode='stack'   # for all three scenarios (yr/month/day)
       
+      ########
+      ###Year
       if (!length(drills$current_yr)) {
         # data-preprocessing
         k1=count(k,Year,Category,color) 
-        k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
-                                 "\nCategory: ",k1$Category,
-                                 "\nDifference: ",k1$n)
+        # k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+        #                          "\nCategory: ",k1$Category,
+        #                          "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
           ### percent
@@ -756,16 +758,19 @@ server <- function(input, output, session) {
           k_new = k %>% count(Year)
           k_lj=left_join(k1,k_new,by="Year")
           k1$n = k_lj$n.x/k_lj$n.y; 
-          k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
-                                   "\nCategory: ",k1$Category,
-                                   "\nDifference: ",percent(k1$n))
+          # k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+          #                          "\nCategory: ",k1$Category,
+          #                          "\nDifference: ",percent(k1$n))
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
         }
         
         k = k1  # tailor for the use of comparison
         
-        k_before <<-k      
-        
+        k_before = k    # store the raw encounters in k_before before starting doing comparisons
+        ########################
+        # the 1) Comparison.
+        # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
+        # set the corresponding type in the previous year to zero. 
         ### Comparison in years
         first_else=0; k$comp=0; flag=0 
         for(i in 1:nrow(k)){
@@ -845,7 +850,54 @@ server <- function(input, output, session) {
         # override n to comp
         k$n=k$comp  
         
-        k_after <<- k
+        ###### the 2) Comparison. Show comparison between two years/months/days
+        # k stores the data after doing comparisons for two consecutively-recorded years/months/days
+        ## k_before stores the original raw encounters 
+        tot_ro=nrow(k)
+        for(i in 1:tot_ro){
+          yr_new=k$Year[i]
+          #1st if - only run in the 1st i 
+          if(i==1) yr=k$Year[i] 
+          if( (year(yr_new)-year(yr))>1 ){
+            #yr+1: comp(yr+1)=0-yr
+            g=k[k$Year==yr,]
+            
+            g$Year=paste0((year(g$Year) + 1),'-01-01') %>% as.Date  #convert from character to Date
+            g$n=-k_before[k_before$Year==yr,]$n
+            k=rbind(k,g)  #generate new rows; need to be sorted later
+            
+            #yr_new: comp(yr_new)=yr_new-0
+            k[k$Year==yr_new,]$n=k_before[k_before$Year==yr_new,]$n
+            
+            #other yrs [yr+2,yr_new-1] : 0
+            if( (year(yr_new)-year(yr))>2){
+              j=1;flag=1
+              while(flag){
+                g=k[k$Year==yr,] %>% .[1,]   #only generate one row for non-recorded year
+                g$Year=paste0((year(g$Year) +1+j),'-01-01') %>% as.Date #convert from character to Date
+                g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
+                j=j+1; if(year(unique(g$Year)) >= (year(yr_new)-1) ) flag=0
+                # print(year(unique(g$Year))); print('...')
+                # print(year(yr_new)-1); print('\n')
+              }
+            }
+            
+          }
+          yr=yr_new
+        }
+        
+        k = k %>% arrange(Year)   # sort the rows by year
+        
+        # k$Description ... !! 
+        if(input$show_penc2 == TRUE) {
+          k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",percent(k$n))
+        }else{
+          k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",k$n)
+        }
         
         title='Difference on Encounters from Two Consecutively-Recorded Years'
         
@@ -861,28 +913,35 @@ server <- function(input, output, session) {
                  yaxis=yaxi,
                  xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
         pc
-      } else if(!length(drills$current_month)){
+      } else if(!length(drills$current_month)){   
+        ########
+        ###Month
         
         k1 <- filter(k,Year == drills$current_yr)
         k1 = k1 %>% count(Month,Category,color) 
-        k1$Description <- paste0("Year: ",str_sub(k1$Month,1,7), 
-                                 "\nCategory: ",k1$Category,
-                                 "\nDifference: ",k1$n)
+        # k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+        #                          "\nCategory: ",k1$Category,
+        #                          "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {
           ### percent
           k_new = k %>% count(Month)
           k_lj=left_join(k1,k_new,by="Month")
           k1$n = k_lj$n.x/k_lj$n.y; 
-          k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
-                                   "\nCategory: ",k1$Category,
-                                   "\nDifference: ",percent(k1$n))
+          # k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+          #                          "\nCategory: ",k1$Category,
+          #                          "\nDifference: ",percent(k1$n))
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
           
         } 
         
         k=k1 #tailor for the use of comparison
         
+        k_before = k
+        ########################
+        # the 1) Comparison.
+        # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
+        # set the corresponding type in the previous year to zero. 
         #################
         ##Make Comparison - Month
         first_else=0; k$comp=0; flag=0 
@@ -915,7 +974,6 @@ server <- function(input, output, session) {
               info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that month
               info=c()                          # set it to default
               info_new[k$Category[i]]=k$n[i]; flag=1  #"even" month - info_new (flag=1)
-              
             }else{         # 1->0
               info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that month
               info_new=c()                      # set it to default
@@ -924,11 +982,11 @@ server <- function(input, output, session) {
             
             if(first_else==1){  # starting from the 2nd time of unmatch of two months, run the following code chunk
               if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-                info_even[!(names(info_even) %in% names(info_odd))]=0
+                # not setting it to zero 
+                # info_even[!(names(info_even) %in% names(info_odd))]=0 #if one encounter type does not appear in the previous month, set it to 0.
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -938,11 +996,11 @@ server <- function(input, output, session) {
                 
                 info_even=info_evenk  # undo the change made to info_even
               }else{    # [odd-even]
-                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                # not setting it to zero 
+                # info_odd[!(names(info_odd) %in% names(info_even))]=0   #if one encounter type does not appear in the previous month, set it to 0.
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -951,16 +1009,68 @@ server <- function(input, output, session) {
                 }
                 info_odd=info_oddk   # undo the change made to info_odd
               }
-            }
+            } # first_else
             first_else=1   
-          } # a big else 
+          } # the 3rd if
         }  # for loop
+        
+        
+        # assign the original values to the first recorded year 
+        k[k$Month==k$Month[1],]$comp = k_before[k_before$Month==k$Month[1],]$n
         
         k$n=k$comp  # override n to comp
         
+        ###### the 2) Comparison. Show comparison between two years/months/days
+        # k stores the data after doing comparisons for two consecutively-recorded years/months/days
+        ## k_before stores the original raw encounters 
+        tot_ro=nrow(k)
+        for(i in 1:tot_ro){
+          yr_new=k$Month[i]
+          #1st if - only run in the 1st i 
+          if(i==1) yr=k$Month[i] 
+          if( (month(yr_new)-month(yr))>1 ){
+            #yr+1: comp(yr+1)=0-yr
+            g=k[k$Month==yr,]
+            
+            g$Month=paste0(yyear,'-',(month(g$Month) + 1),'-01') %>% as.Date  #convert from character to Date
+            g$n=-k_before[k_before$Month==yr,]$n
+            k=rbind(k,g)  #generate new rows; need to be sorted later
+            
+            #yr_new: comp(yr_new)=yr_new-0
+            k[k$Month==yr_new,]$n=k_before[k_before$Month==yr_new,]$n
+            
+            #other yrs [yr+2,yr_new-1] : 0
+            if( (month(yr_new)-month(yr))>2){
+              j=1;flag=1
+              while(flag){
+                g=k[k$Month==yr,] %>% .[1,]   #only generate one row for non-recorded year
+                g$Month=paste0(yyear,'-',(month(g$Month) + 1+j),'-01') %>% as.Date #convert from character to Date
+                g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
+                j=j+1; if(month(unique(g$Month)) >= (month(yr_new)-1) ) flag=0
+                # print(month(unique(g$Month))); print('...')
+                # print(month(yr_new)-1); print('\n')
+              }
+            }
+            
+          }
+          yr=yr_new
+        }
+        
+        k = k %>% arrange(Month)   # sort the rows by year
+        
+        # k$Description ... !! 
+        if(input$show_penc2 == TRUE) {
+          k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",percent(k$n))
+        }else{
+          k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",k$n)
+        }
+        
         # title=paste0("Encounters Aggregated by Month (Year ",yyear,")")
         title=paste0("Difference on Encounters from Two Consecutively-Recorded Months (Year: ", yyear,")")
-        
         
         title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                             yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
@@ -978,28 +1088,37 @@ server <- function(input, output, session) {
         pc
         
       }else {
+        ########
+        ###Day in output$dat_comp
+        
         # data-preprocessing
         k1 <- filter(k,Month == drills$current_month)
         # k <- filter(k,Year == drills$current_yr,Month == drills$current_month)
         k1 = k1 %>% count(StartDate,Category,color)
-        k1$Description <- paste0("Year: ",k1$StartDate,
-                                 "\nCategory: ",k1$Category,
-                                 "\nDifference: ",k1$n)
+        
+        # k1$Description <- paste0("Date: ",k1$StartDate,
+        #                          "\nCategory: ",k1$Category,
+        #                          "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {
           ### percent
           k_new = k %>% count(StartDate)
           k_lj=left_join(k1,k_new,by="StartDate")
           k1$n = k_lj$n.x/k_lj$n.y; 
-          k1$Description <- paste0("Date: ",k1$StartDate, 
-                                   "\nCategory: ",k1$Category,
-                                   "\nDifference: ",percent(k1$n))
+          # k1$Description <- paste0("Date: ",k1$StartDate, 
+          #                          "\nCategory: ",k1$Category,
+          #                          "\nDifference: ",percent(k1$n))
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
           
         }   
         
         k=k1 #tailor for the use of comparison
         
+        k_before = k    # store the raw encounters in k_before before starting doing comparisons
+        ########################
+        # the 1) Comparison.
+        # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
+        # set the corresponding type in the previous year to zero. 
         ##############
         ##Make Comparison - Day
         first_else=0; k$comp=0; flag=0 
@@ -1041,11 +1160,11 @@ server <- function(input, output, session) {
             
             if(first_else==1){  # starting from the 2nd time of unmatch of two days, run the following code chunk
               if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-                info_even[!(names(info_even) %in% names(info_odd))]=0
+                # not setting it to zero 
+                # info_even[!(names(info_even) %in% names(info_odd))]=0  #if one encounter type does not appear in the previous day, set it to 0.
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -1055,11 +1174,11 @@ server <- function(input, output, session) {
                 
                 info_even=info_evenk  # undo the change made to info_even
               }else{    # [odd-even]
-                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                # not setting it to zero 
+                # info_odd[!(names(info_odd) %in% names(info_even))]=0  #if one encounter type does not appear in the previous day, set it to 0.
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -1068,13 +1187,69 @@ server <- function(input, output, session) {
                 }
                 info_odd=info_oddk   # undo the change made to info_odd
               }
-            }
+            } # first_else
             first_else=1   
-          } # a big else 
+          } # the 3rd if
         }  # for loop
+        
+        
+        # assign the original values to the first recorded year 
+        k[k$StartDate==k$StartDate[1],]$comp = k_before[k_before$StartDate==k$StartDate[1],]$n
         
         k$n=k$comp  # override n to comp
         
+        ###### the 2) Comparison. Show comparison between two years/months/days
+        # k stores the data after doing comparisons for two consecutively-recorded years/months/days
+        ## k_before stores the original raw encounters 
+        tot_ro=nrow(k)
+        for(i in 1:tot_ro){
+          yr_new=k$StartDate[i]
+          #1st if - only run in the 1st i 
+          if(i==1) yr=k$StartDate[i] 
+          if( (yr_new-yr)>1 ){
+            #yr+1: comp(yr+1)=0-yr
+            g=k[k$StartDate==yr,]
+            
+            g$StartDate=(g$StartDate + 1) %>% as.Date  #convert from character to Date
+            g$n=-k_before[k_before$StartDate==yr,]$n
+            k=rbind(k,g)  #generate new rows; need to be sorted later
+            
+            #yr_new: comp(yr_new)=yr_new-0
+            k[k$StartDate==yr_new,]$n=k_before[k_before$StartDate==yr_new,]$n
+            
+            #other yrs [yr+2,yr_new-1] : 0
+            if( (yr_new-yr)>2 ){
+              j=1;flag=1
+              while(flag){
+                g=k[k$StartDate==yr,] %>% .[1,]   #only generate one row for non-recorded year
+                g$StartDate=(g$StartDate + 1+j)%>% as.Date #convert from character to Date
+                g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
+                j=j+1; if(unique(g$StartDate) >= (yr_new-1) ) flag=0
+                # print(month(unique(g$Month))); print('...')
+                # print(month(yr_new)-1); print('\n')
+              }
+            }
+            
+          }
+          yr=yr_new
+        }
+        
+        k = k %>% arrange(StartDate)   # sort the rows by year
+        
+        # k$Description ... !! 
+        if(input$show_penc2 == TRUE) {
+          k$Description <- paste0("Date: ",k$StartDate,
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",percent(k$n))
+        }else{
+          k$Description <- paste0("Date: ",k$StartDate,
+                                  "\nCategory: ",k$Category,
+                                  "\nDifference: ",k$n)
+        }
+        
+        # k_after <<- k
+        
+        ### further refine plot layout
         yr=str_sub(mmonth,1,4); mo=str_sub(mmonth,6,7) %>% as.numeric %>% month.abb[.]
         title=paste0("Difference on Encounters from Two Consecutively-Recorded Days (Month: ",mo,', ',yr,")")
         
@@ -1176,13 +1351,17 @@ server <- function(input, output, session) {
                                 "\nPercentage: ",percent(k$n))
         
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
-        # k_perc <<- k
       }
       
-      ##############
-      ##############
+      
+      ########################
+      # the 1) Comparison.
+      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
+      # set the corresponding type in the previous year to zero. 
       ##Make Comparison - Year
       if(input$show_comp == TRUE){
+        
+        k_before = k
         
         first_else=0; k$comp=0; flag=0 
         for(i in 1:nrow(k)){
@@ -1223,11 +1402,11 @@ server <- function(input, output, session) {
             
             if(first_else==1){  # starting from the 2nd time of unmatch of two yrs, run the following code chunk
               if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-                info_even[!(names(info_even) %in% names(info_odd))]=0
+                # not setting it to zero 
+                # info_even[!(names(info_even) %in% names(info_odd))]=0  #if one encounter type does not appear in the previous yr, set it to 0.
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -1237,11 +1416,11 @@ server <- function(input, output, session) {
                 
                 info_even=info_evenk  # undo the change made to info_even
               }else{    # [odd-even]
-                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                # not setting it to zero 
+                # info_odd[!(names(info_odd) %in% names(info_even))]=0   #if one encounter type does not appear in the previous yr, set it to 0.
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -1250,13 +1429,53 @@ server <- function(input, output, session) {
                 }
                 info_odd=info_oddk   # undo the change made to info_odd
               }
-            }
+            }# first_else
             first_else=1   
-          } # a big else 
+          } # the 3rd if 
         }  # for loop
+        
+        # assign the original values to the first recorded year 
+        k[k$Year==k$Year[1],]$comp = k_before[k_before$Year==k$Year[1],]$n
         
         k$n=k$comp  # override n to comp
         
+        ###### the 2) Comparison. Show comparison between two years/months/days
+        # k stores the data after doing comparisons for two consecutively-recorded years/months/days
+        ## k_before stores the original raw encounters 
+        tot_ro=nrow(k)
+        for(i in 1:tot_ro){
+          yr_new=k$Year[i]
+          #1st if - only run in the 1st i 
+          if(i==1) yr=k$Year[i] 
+          if( (year(yr_new)-year(yr))>1 ){
+            #yr+1: comp(yr+1)=0-yr
+            g=k[k$Year==yr,]
+            
+            g$Year=paste0((year(g$Year) + 1),'-01-01') %>% as.Date  #convert from character to Date
+            g$n=-k_before[k_before$Year==yr,]$n
+            k=rbind(k,g)  #generate new rows; need to be sorted later
+            
+            #yr_new: comp(yr_new)=yr_new-0
+            k[k$Year==yr_new,]$n=k_before[k_before$Year==yr_new,]$n
+            
+            #other yrs [yr+2,yr_new-1] : 0
+            if( (year(yr_new)-year(yr))>2){
+              j=1;flag=1
+              while(flag){
+                g=k[k$Year==yr,] %>% .[1,]   #only generate one row for non-recorded year
+                g$Year=paste0((year(g$Year) +1+j),'-01-01') %>% as.Date #convert from character to Date
+                g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
+                j=j+1; if(year(unique(g$Year)) >= (year(yr_new)-1) ) flag=0
+              }
+            }
+            
+          }
+          yr=yr_new
+        }
+        
+        k = k %>% arrange(Year)   # sort the rows by year
+        
+        # k$Description ...
         # show the text when hovered over
         if(input$show_penc == TRUE){
           k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
@@ -1269,7 +1488,7 @@ server <- function(input, output, session) {
         }
         
         title='Difference on Encounters from Two Consecutively-Recorded Years'
-      }  # the input if
+      }  # the comparison if
       
       
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
@@ -1340,12 +1559,14 @@ server <- function(input, output, session) {
         
         yaxi=list(title='Percentage per Month', visible=T,tickformat = "%")
         
-        # k_ori <<- k
       }
       
+      k_before = k   # store the raw encounters in k_before before starting doing comparisons
+      ########################
+      # the 1) Comparison.
+      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
+      # set the corresponding type in the previous year to zero. 
       
-      ##############
-      ##############
       ##Make Comparison - month
       if(input$show_comp == TRUE){
         
@@ -1388,7 +1609,7 @@ server <- function(input, output, session) {
             
             if(first_else==1){  # starting from the 2nd time of unmatch of two months, run the following code chunk
               if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-                info_even[!(names(info_even) %in% names(info_odd))]=0
+                # info_even[!(names(info_even) %in% names(info_odd))]=0
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
@@ -1402,7 +1623,7 @@ server <- function(input, output, session) {
                 
                 info_even=info_evenk  # undo the change made to info_even
               }else{    # [odd-even]
-                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                # info_odd[!(names(info_odd) %in% names(info_even))]=0
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
@@ -1420,7 +1641,46 @@ server <- function(input, output, session) {
           } # a big else 
         }  # for loop
         
+        # assign the original values to the first recorded year 
+        k[k$Month==k$Month[1],]$comp = k_before[k_before$Month==k$Month[1],]$n
+        
         k$n=k$comp  # override n to comp
+        
+        ###### the 2) Comparison. Show comparison between two years/months/days
+        # k stores the data after doing comparisons for two consecutively-recorded years/months/days
+        ## k_before stores the original raw encounters 
+        tot_ro=nrow(k)
+        for(i in 1:tot_ro){
+          yr_new=k$Month[i]
+          #1st if - only run in the 1st i 
+          if(i==1) yr=k$Month[i] 
+          if( (month(yr_new)-month(yr))>1 ){
+            #yr+1: comp(yr+1)=0-yr
+            g=k[k$Month==yr,]
+            
+            g$Month=paste0(yyear,'-',(month(g$Month) + 1),'-01') %>% as.Date  #convert from character to Date
+            g$n=-k_before[k_before$Month==yr,]$n
+            k=rbind(k,g)  #generate new rows; need to be sorted later
+            
+            #yr_new: comp(yr_new)=yr_new-0
+            k[k$Month==yr_new,]$n=k_before[k_before$Month==yr_new,]$n
+            
+            #other yrs [yr+2,yr_new-1] : 0
+            if( (month(yr_new)-month(yr))>2){
+              j=1;flag=1
+              while(flag){
+                g=k[k$Month==yr,] %>% .[1,]   #only generate one row for non-recorded year
+                g$Month=paste0(yyear,'-',(month(g$Month) + 1+j),'-01') %>% as.Date #convert from character to Date
+                g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
+                j=j+1; if(month(unique(g$Month)) >= (month(yr_new)-1) ) flag=0
+              }
+            }
+            
+          }
+          yr=yr_new
+        }
+        
+        k = k %>% arrange(Month)   # sort the rows by year
         
         # show the text when hovered over
         if(input$show_penc == TRUE){
@@ -1433,8 +1693,6 @@ server <- function(input, output, session) {
                                   "\nDifference: ",k$n)
         }
         title=paste0("Difference on Encounters from Two Consecutively-Recorded Months (Year ", yyear,")")
-        
-        # k <<- k
         
       }  # the input if
       ## The end of the comparison
@@ -1487,7 +1745,6 @@ server <- function(input, output, session) {
       title=paste0("Encounters by Day (Month: ",mo,', ',yr,")")
       # title=paste0("Encounters by Day (Month ", mmonth,")")
       
-      # k_ori <<- k
       
       # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
       if(input$show_stackbar == TRUE) my_barmode='stack'
@@ -1503,10 +1760,16 @@ server <- function(input, output, session) {
         yaxi=list(title='Percentage per Day', visible=T,tickformat = "%")
       }
       
-      ##############
+      
+      ########################
+      # the 1) Comparison.
+      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
+      # set the corresponding type in the previous year to zero. 
       ##############
       ##Make Comparison - Day
       if(input$show_comp == TRUE){
+        
+        k_before = k    # store the raw encounters in k_before before starting doing comparisons
         
         first_else=0; k$comp=0; flag=0 
         for(i in 1:nrow(k)){
@@ -1547,7 +1810,7 @@ server <- function(input, output, session) {
             
             if(first_else==1){  # starting from the 2nd time of unmatch of two days, run the following code chunk
               if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-                info_even[!(names(info_even) %in% names(info_odd))]=0
+                # info_even[!(names(info_even) %in% names(info_odd))]=0
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
@@ -1561,7 +1824,7 @@ server <- function(input, output, session) {
                 
                 info_even=info_evenk  # undo the change made to info_even
               }else{    # [odd-even]
-                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                # info_odd[!(names(info_odd) %in% names(info_even))]=0
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
@@ -1573,13 +1836,53 @@ server <- function(input, output, session) {
                 }
                 info_odd=info_oddk   # undo the change made to info_odd
               }
-            }
+            }  # first_else=0
             first_else=1   
-          } # a big else 
+          } # the 3rd if
         }  # for loop
+        
+        # assign the original values to the first recorded year 
+        k[k$StartDate==k$StartDate[1],]$comp = k_before[k_before$StartDate==k$StartDate[1],]$n
         
         k$n=k$comp  # override n to comp
         
+        ###### the 2) Comparison. Show comparison between two years/months/days
+        # k stores the data after doing comparisons for two consecutively-recorded years/months/days
+        ## k_before stores the original raw encounters 
+        tot_ro=nrow(k)
+        for(i in 1:tot_ro){
+          yr_new=k$StartDate[i]
+          #1st if - only run in the 1st i 
+          if(i==1) yr=k$StartDate[i] 
+          if( (yr_new-yr)>1 ){
+            #yr+1: comp(yr+1)=0-yr
+            g=k[k$StartDate==yr,]
+            
+            g$StartDate=(g$StartDate + 1) %>% as.Date  #convert from character to Date
+            g$n=-k_before[k_before$StartDate==yr,]$n
+            k=rbind(k,g)  #generate new rows; need to be sorted later
+            
+            #yr_new: comp(yr_new)=yr_new-0
+            k[k$StartDate==yr_new,]$n=k_before[k_before$StartDate==yr_new,]$n
+            
+            #other yrs [yr+2,yr_new-1] : 0
+            if( (yr_new-yr)>2 ){
+              j=1;flag=1
+              while(flag){
+                g=k[k$StartDate==yr,] %>% .[1,]   #only generate one row for non-recorded year
+                g$StartDate=(g$StartDate + 1+j)%>% as.Date #convert from character to Date
+                g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
+                j=j+1; if(unique(g$StartDate) >= (yr_new-1) ) flag=0
+              }
+            }
+            
+          }
+          yr=yr_new
+        }
+        
+        k = k %>% arrange(StartDate)   # sort the rows by year
+        
+        # k$Description ... !! 
         # show the text when hovered over
         if(input$show_penc == TRUE){
           k$Description <- paste0("Date: ",k$StartDate,
@@ -1591,7 +1894,6 @@ server <- function(input, output, session) {
                                   "\nDifference: ",k$n)
         }
         title=paste0("Difference on Encounters from Two Consecutively-Recorded Days (Month ", mmonth,")")
-        # k <<- k
         
       }  # the input if
       ## The end of the comparison
@@ -2156,4 +2458,3 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
-
