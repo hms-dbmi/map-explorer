@@ -150,7 +150,7 @@ for (i_indi in 2:(ncol(df)-1)){   # starting from the second columns
   
   groupinfo_df$group <- vis_df %>% group_by(group) %>% summarize(groupnum = groupnum[1]) %>% 
     arrange(groupnum) %>% .$group
-
+  
   # # Prepare data for the barchart plot
   # # ratio_df stores the information of the proportion of the phecodes above threshold in each PheWAS group.
   tmp_df <- vis_df[which(vis_df$is_highlight == "yes"),]
@@ -169,8 +169,8 @@ for (i_indi in 2:(ncol(df)-1)){   # starting from the second columns
   }
   colnames(ratio_df)[2] <- "Proportion_abv_thrh"
   
-
-   
+  
+  
   tmp <- c()
   for (ele in ratio_df$Proportion_abv_thrh){
     tmp <- c(tmp,percent(ele))
@@ -322,15 +322,12 @@ ui <- fluidPage(
     tabsetPanel(
       
       tabPanel("Explore",
-               conditionalPanel(
-                 condition= "ncol(df)>0",
-                 selectInput(inputId="individual_id",
-                             label="Select Patient ID: ",
-                             choices=c(1:(ncol(df)-2)), 
-                             # choices=c(1:nrow(dat)), 
-                             selected = 1, selectize = F),
-                 plotlyOutput("bar")
-               )
+               selectInput(inputId="individual_id",
+                           label="Select Patient ID: ",
+                           choices=c(1:(ncol(df)-2)), 
+                           # choices=c(1:nrow(dat)), 
+                           selected = 1, selectize = F),
+               plotlyOutput("bar")
       ),
       
       tabPanel("File upload",
@@ -372,10 +369,10 @@ ui <- fluidPage(
     tabsetPanel(
       tabPanel("Main",
                h3("MAP Manhattan Plot"),
-               conditionalPanel(
-                 condition= "ncol(df)>0",
-                 fluidRow(
-                   plotlyOutput("plot",height = 500))  )# for conditionalPanel
+               # conditionalPanel(
+               # condition= "ncol(df)>0",
+               fluidRow(
+                 plotlyOutput("plot",height = 500))  #)# for conditionalPanel
                # br(),
                # textOutput("sig_tab"),
                # br(),
@@ -390,18 +387,16 @@ ui <- fluidPage(
                
       ),
       tabPanel("Info Table",
-               conditionalPanel(
-                 condition= "ncol(df)>0",
-                 textOutput("sig_tab"),
-                 br(),
-                 textOutput("cond_num"),     #report number of phecodes above threshold
-                 textOutput("brush"),        #report number of phecodes both above threshold and selected
-                 br(),
-                 checkboxInput("details","More details (with MAP cutoff):",FALSE),
-                 DT::DTOutput("panel"),
-                 tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-                 tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-                 tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))   )
+               textOutput("sig_tab"),
+               br(),
+               textOutput("cond_num"),     #report number of phecodes above threshold
+               textOutput("brush"),        #report number of phecodes both above threshold and selected
+               br(),
+               checkboxInput("details","More details (with MAP cutoff):",FALSE),
+               DT::DTOutput("panel"),
+               tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
+               tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
+               tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))   
       ),
       
       tabPanel("Word Cloud",
@@ -417,83 +412,75 @@ ui <- fluidPage(
       ),
       tabPanel("Detailed Evidence",
                h3("MS Data Overview"),
-               conditionalPanel(
-                 condition= "ncol(three_mss)>0",
-                 column(width = 6,
-                        selectInput(inputId="patient_num",
-                                    label="Select Patient Number: ",
-                                    choices=choices, 
-                                    selected = 1),
-                        # get rid of the extra line between two checkboxes
-                        tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-                        checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
-                        checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
-                        checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)), 
-                 column(width = 6,
-                        selectInput(inputId="enco_type",
-                                    label="Select Encounter type(s): ",
-                                    choices=unique(three_mss$Category), multiple = T,
-                                    selected = unique(three_mss$Category))),
-                 br(), br(), br(), br(), br(), br(), br(),
-                 plotlyOutput("dat_year", height = 300),
-                 br(),
-                 plotlyOutput("dat_month", height = 300),
-                 br(),
-                 plotlyOutput("dat_daily", height = 300) )
+               column(width = 6,
+                      selectInput(inputId="patient_num",
+                                  label="Select Patient Number: ",
+                                  choices=choices, 
+                                  selected = 1),
+                      # get rid of the extra line between two checkboxes
+                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+                      checkboxInput("show_stackbar","Show Stacked Bar Charts ",FALSE),
+                      checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
+                      checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)), 
+               column(width = 6,
+                      selectInput(inputId="enco_type",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
+               plotlyOutput("dat_year", height = 300),
+               br(),
+               plotlyOutput("dat_month", height = 300),
+               br(),
+               plotlyOutput("dat_daily", height = 300) 
       ),
       tabPanel("Detailed Evidence II",
                h3("MS Data Overview"),
-               conditionalPanel(
-                 condition= "ncol(three_mss)>0",
-                 column(width = 6,
-                        selectInput(inputId="patient_num2",
-                                    label="Select Patient Number: ",
-                                    choices=choices, 
-                                    selected = 1),
-                        # get rid of the extra line between two checkboxes
-                        tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-                        checkboxInput("show_stackbar2","Show Stacked Bar Charts ",FALSE),
-                        checkboxInput("show_penc2","Show percentage",FALSE)),  # Abs encounters -> percentage
-                 # checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
-                 column(width = 6,
-                        selectInput(inputId="enco_type2",
-                                    label="Select Encounter type(s): ",
-                                    choices=unique(three_mss$Category), multiple = T,
-                                    selected = unique(three_mss$Category))),
-                 br(), br(), br(), br(), br(), br(), br(),
-                 uiOutput("history"),
-                 plotlyOutput("dat_all", height = 300),br(),
-                 plotlyOutput("dat_comp", height = 300)    )
+               column(width = 6,
+                      selectInput(inputId="patient_num2",
+                                  label="Select Patient Number: ",
+                                  choices=choices, 
+                                  selected = 1),
+                      # get rid of the extra line between two checkboxes
+                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+                      checkboxInput("show_stackbar2","Show Stacked Bar Charts ",FALSE),
+                      checkboxInput("show_penc2","Show percentage",FALSE)),  # Abs encounters -> percentage
+               # checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
+               column(width = 6,
+                      selectInput(inputId="enco_type2",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
+               uiOutput("history"),
+               plotlyOutput("dat_all", height = 300),br(),
+               plotlyOutput("dat_comp", height = 300)    
       ),
       tabPanel("Detailed Evidence III",
                h3("MS Data Overview"),
-               conditionalPanel(
-                 condition= "ncol(three_mss)>0",
-                 column(width = 6,
-                        selectInput(inputId="patient_vd_num",
-                                    label="Select Patient Number: ",
-                                    choices=choices, 
-                                    selected = 1)), # modify the size of the input box
-                 column(width = 6,
-                        selectInput(inputId="enco_vd_type",
-                                    label="Select Encounter type(s): ",
-                                    choices=unique(three_mss$Category), multiple = T,
-                                    selected = unique(three_mss$Category))),
-                 br(), br(), br(), br(), br(), br(), br(),
-                 h4("Encounters by Day"),
-                 plotlyOutput("all_six", height = 600),
-                 br(),
-                 h4("Vitamin D Levels"),
-                 checkboxInput("show_trend","Show the trend in a line graph",FALSE),
-                 plotlyOutput("vitd"))    )
+               column(width = 6,
+                      selectInput(inputId="patient_vd_num",
+                                  label="Select Patient Number: ",
+                                  choices=choices, 
+                                  selected = 1)), # modify the size of the input box
+               column(width = 6,
+                      selectInput(inputId="enco_vd_type",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
+               h4("Encounters by Day"),
+               plotlyOutput("all_six", height = 600),
+               br(),
+               h4("Vitamin D Levels"),
+               checkboxInput("show_trend","Show the trend in a line graph",FALSE),
+               plotlyOutput("vitd"))    
     ) # for tabsetPanel
     
   )) # ")" for mainPanel & fluidPage
 
 
 server <- function(input, output, session) {
-  
-  
   
   # For `Detailed Evidence II - or try` tabset
   # These reactive values keep track of the drilldown state
@@ -510,19 +497,101 @@ server <- function(input, output, session) {
     # observeEvent(event_data("plotly_click", source = "dat_all"), {
     x <- event_data("plotly_click")$x
     # x <- event_data("plotly_click", source = "dat_all")$x
+    
+    cat('\nx...\t'); cat(x); cat('\n')
     if (!length(x)) return()
     
     if (!length(drills$current_yr)) {
       drills$current_yr <- x
     } else if (!length(drills$current_month)) {
       drills$current_month <- x
-    } 
+    }
+    
+  })
+  
+  
+  output$history <- renderUI({
+    if (!length(drills$current_yr)) return("Click the bar chart to drilldown")
+    
+    id <- match(input$patient_num2, choices)
+    pat_encounter <- which(three_mss$PatientNum == choices[id])
+    
+    keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type2]
+    
+    k <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
+    all_yr <- unique(k$Year)       #categories
+    
+    categoryInput <- selectInput(
+      "yyyear", "Year",
+      choices = str_sub(all_yr,1,4), selected = str_sub(drills$current_yr,1,4)
+    )
+    if (!length(drills$current_month)) {
+      return(fluidRow(
+        column(3, categoryInput),
+        column(3, tags$style(HTML('#back {margin-top: 25px}')),   # align the actionbutton & selectInput next to each other
+               uiOutput("back"))
+      ))
+    }
+    
+    sd <- filter(k, Year == drills$current_yr)
+    
+    subCategoryInput <- selectInput(
+      "mmmonth", "Month",
+      choices = unique(str_sub(sd$Month,6,7)),
+      selected = str_sub(drills$current_month,6,7)
+    )
+    
+    fluidRow(
+      column(3, categoryInput),
+      column(3, subCategoryInput),
+      column(3, tags$style(HTML('#back2 {margin-top: 25px}')), uiOutput("back2"))
+    )
+    
+  })
+  
+  
+  # populate back button if category is chosen
+  output$back <- renderUI({
+    if (length(drills$current_yr) & !length(drills$current_month))
+      actionButton("clear", "Back to All Year Overview",icon("chevron-left"))
+  })
+  
+  output$back2 <- renderUI({
+    if (length(drills$current_month))
+      actionButton("clear2", paste("Back to Year",str_sub(drills$current_yr,1,4),'Overview'), icon("chevron-left"))
+  })
+  
+  #########
+  # clear the chosen category when back buttons were pressed & !!! when users select new patients 
+  # considers the change made to input$clear, input$clear2, and input$patient_num2
+  observeEvent(input$clear, {
+    cat(drills$current_yr); cat('...Year-clear\n')
+    cat(drills$current_month); cat('...Month-clear\n')
+    
+    drills$current_yr <- NULL
+    drills$current_month <- NULL
+  })
+  
+  observeEvent(input$clear2, {
+    drills$current_month <- NULL
+  })
+  
+  observeEvent(input$patient_num2, {
+    cat(drills$current_yr); cat('...Year-pat\n')
+    cat(drills$current_month); cat('...Month-pat\n')
+    
+    drills$current_yr <- NULL
+    drills$current_month <- NULL
   })
   
   
   ####################
   ## Two output plots in this observeEvent: output$dat_all, output$dat_comp
-  observeEvent(input$enco_type2,{
+  ## React to:
+  # 1) when select a new patient, show the default overview.
+  # 2) when change the encounter type, update the plots accordingly
+  observeEvent(c(input$enco_type2,input$patient_num2),{
+    
     # data pre-processing shared by all
     id <- match(input$patient_num2, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
@@ -533,9 +602,11 @@ server <- function(input, output, session) {
     all_yr <- unique(k$Year)       #categories
     all_month <- unique(k$Month)   #sub_categories
     
+    
     ##########################
     # the bar chart (dat_all)
     output$dat_all <- renderPlotly({
+      
       yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year" 
       yyear= str_sub(drills$current_yr,1,4)
       mmonth=str_sub(drills$current_month,1,7)
@@ -679,7 +750,7 @@ server <- function(input, output, session) {
         k1=count(k,Year,Category,color) 
         k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
                                  "\nCategory: ",k1$Category,
-                                 "\nEncounter: ",k1$n)
+                                 "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
           ### percent
@@ -690,11 +761,13 @@ server <- function(input, output, session) {
           k1$n = k_lj$n.x/k_lj$n.y; 
           k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
                                    "\nCategory: ",k1$Category,
-                                   "\nPercentage: ",percent(k1$n))
+                                   "\nDifference: ",percent(k1$n))
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
         }
         
         k = k1  # tailor for the use of comparison
+        
+        k_before <<- k
         
         ### Comparison in years
         first_else=0; k$comp=0; flag=0 
@@ -736,11 +809,11 @@ server <- function(input, output, session) {
             
             if(first_else==1){  # starting from the 2nd time of unmatch of two yrs, run the following code chunk
               if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-                info_even[!(names(info_even) %in% names(info_odd))]=0
+                # not setting it to zero 
+                # info_even[!(names(info_even) %in% names(info_odd))]=0    #if one encounter type does not appear in the previous yr, set it to 0.
                 info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                               info_even[!(names(info_even) %in% names(info_odd))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -750,11 +823,11 @@ server <- function(input, output, session) {
                 
                 info_even=info_evenk  # undo the change made to info_even
               }else{    # [odd-even]
-                info_odd[!(names(info_odd) %in% names(info_even))]=0
+                # not setting it to zero 
+                # info_odd[!(names(info_odd) %in% names(info_even))]=0    #if one encounter type does not appear in the previous yr, set it to 0.
                 info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                               info_odd[!(names(info_odd) %in% names(info_even))])
                 #Arrange the list in target order
-                # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
                 tmp=info_comp[sort(names(info_comp))]
                 if(i!=nrow(k)){
                   k$comp[(i-length(info_comp)):(i-1)]=tmp  
@@ -769,6 +842,9 @@ server <- function(input, output, session) {
         }  # for loop
         
         k$n=k$comp  # override n to comp
+        
+        k_after <<- k
+        
         
         title='Difference on Encounters from Two Consecutively-Recorded Years'
         
@@ -790,7 +866,7 @@ server <- function(input, output, session) {
         k1 = k1 %>% count(Month,Category,color) 
         k1$Description <- paste0("Year: ",str_sub(k1$Month,1,7), 
                                  "\nCategory: ",k1$Category,
-                                 "\nEncounter: ",k1$n)
+                                 "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {
           ### percent
@@ -799,7 +875,7 @@ server <- function(input, output, session) {
           k1$n = k_lj$n.x/k_lj$n.y; 
           k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
                                    "\nCategory: ",k1$Category,
-                                   "\nPercentage: ",percent(k1$n))
+                                   "\nDifference: ",percent(k1$n))
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
           
         } 
@@ -907,7 +983,7 @@ server <- function(input, output, session) {
         k1 = k1 %>% count(StartDate,Category,color)
         k1$Description <- paste0("Year: ",k1$StartDate,
                                  "\nCategory: ",k1$Category,
-                                 "\nEncounter: ",k1$n)
+                                 "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {
           ### percent
@@ -916,7 +992,7 @@ server <- function(input, output, session) {
           k1$n = k_lj$n.x/k_lj$n.y; 
           k1$Description <- paste0("Date: ",k1$StartDate, 
                                    "\nCategory: ",k1$Category,
-                                   "\nPercentage: ",percent(k1$n))
+                                   "\nDifference: ",percent(k1$n))
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
           
         }   
@@ -1025,77 +1101,22 @@ server <- function(input, output, session) {
       
     })
     
-    
-    output$history <- renderUI({
-      if (!length(drills$current_yr)) return("Click the bar chart to drilldown")
-      
-      # cat(drills$current_yr); cat('  here\n')
-      categoryInput <- selectInput(
-        "yyyear", "Year", 
-        choices = str_sub(all_yr,1,4), selected = str_sub(drills$current_yr,1,4)
-      )
-      if (!length(drills$current_month)) {
-        return(fluidRow(
-          column(3, categoryInput), 
-          column(3, tags$style(HTML('#back {margin-top: 25px}')),   # align the actionbutton & selectInput next to each other 
-                 uiOutput("back"))
-        ))
-      }
-      
-      sd <- filter(k, Year == drills$current_yr)
-      # cat(unique(str_sub(sd$Month,6,7))); cat('  here2 \n')
-      
-      subCategoryInput <- selectInput(
-        "mmmonth", "Month", 
-        choices = unique(str_sub(sd$Month,6,7)), 
-        selected = str_sub(drills$current_month,6,7)  
-      )
-      
-      fluidRow(
-        column(3, categoryInput), 
-        column(3, subCategoryInput),
-        column(3, tags$style(HTML('#back2 {margin-top: 25px}')), uiOutput("back2"))
-      )
-      
-      
-    })
-    
-    # control the state of the drilldown via the `selectInput()`s
-    observeEvent(input$yyyear, {
-      drills$current_yr <- paste0(input$yyyear,'-01-01')
-      drills$current_month <- NULL
-    })
-    observeEvent(input$mmmonth, {
-      drills$current_month <- paste0(input$yyyear,'-',input$mmmonth,'-01')
-    })
-    
-    
-    # populate back button if category is chosen
-    output$back <- renderUI({
-      if (length(drills$current_yr) & !length(drills$current_month))
-        actionButton("clear", "Back to All Year Overview",icon("chevron-left"))
-    })
-    
-    output$back2 <- renderUI({
-      if (length(drills$current_month))
-        actionButton("clear2", paste("Back to Year",str_sub(drills$current_yr,1,4),'Overview'), icon("chevron-left"))
-    })
-    
-    # clear the chosen category on back button press
-    observeEvent(input$clear, {
-      drills$current_yr <- NULL
-      drills$current_month <- NULL
-    })
-    
-    observeEvent(input$clear2, {
-      drills$current_month <- NULL
-    })
-    
-    
+  })  
+  
+  
+  ####################
+  # control the state of the drilldown via the `selectInput()`s
+  observeEvent(input$yyyear, {
+    drills$current_yr <- paste0(input$yyyear,'-01-01')
+    drills$current_month <- NULL
+  })
+  observeEvent(input$mmmonth, {
+    drills$current_month <- paste0(input$yyyear,'-',input$mmmonth,'-01')
   })
   
   
-  
+  #############################
+  #############################
   # For Detailed Evidence tabset
   # for maintaining the state of drill-down variables
   dat_year <- reactiveVal()
@@ -1701,6 +1722,7 @@ server <- function(input, output, session) {
           panel.background = element_rect(fill = "transparent",colour = NA),   # These two rows make the background of the barchart transparent
           plot.background = element_rect(fill = "transparent",colour = NA)) 
     }
+    
     ggplotly(tmp,tooltip="text",source="bar")
     # ggplotly(get(str_glue("ratio_id{input$individual_id}")), tooltip="text")
     
@@ -2018,7 +2040,6 @@ server <- function(input, output, session) {
     pc 
     
   })
-  
   
   
   ### The six subplots
