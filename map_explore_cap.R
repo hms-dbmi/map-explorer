@@ -498,7 +498,7 @@ server <- function(input, output, session) {
     x <- event_data("plotly_click")$x
     # x <- event_data("plotly_click", source = "dat_all")$x
     
-    cat('\nx...\t'); cat(x); cat('\n')
+    # cat('\nx...\t'); cat(x); cat('\n')
     if (!length(x)) return()
     
     if (!length(drills$current_yr)) {
@@ -565,9 +565,6 @@ server <- function(input, output, session) {
   # clear the chosen category when back buttons were pressed & !!! when users select new patients 
   # considers the change made to input$clear, input$clear2, and input$patient_num2
   observeEvent(input$clear, {
-    cat(drills$current_yr); cat('...Year-clear\n')
-    cat(drills$current_month); cat('...Month-clear\n')
-    
     drills$current_yr <- NULL
     drills$current_month <- NULL
   })
@@ -576,10 +573,9 @@ server <- function(input, output, session) {
     drills$current_month <- NULL
   })
   
+  # My guess: have to write it in seperate observeEvent function as the input types of input$clear & input$patient_num2 are very different.
+  # One is actionButton generated from uiOuput, the other is just plain selectInput.
   observeEvent(input$patient_num2, {
-    cat(drills$current_yr); cat('...Year-pat\n')
-    cat(drills$current_month); cat('...Month-pat\n')
-    
     drills$current_yr <- NULL
     drills$current_month <- NULL
   })
@@ -735,6 +731,7 @@ server <- function(input, output, session) {
       
     })
     
+    
     #########################################
     # Show comparisons between adjacent years/months/days
     output$dat_comp <- renderPlotly({
@@ -767,7 +764,7 @@ server <- function(input, output, session) {
         
         k = k1  # tailor for the use of comparison
         
-        k_before <<- k
+        k_before <<-k      
         
         ### Comparison in years
         first_else=0; k$comp=0; flag=0 
@@ -836,15 +833,19 @@ server <- function(input, output, session) {
                 }
                 info_odd=info_oddk   # undo the change made to info_odd
               }
-            }
+            }# first_else
             first_else=1   
-          } # a big else 
+            
+          } # the 3rd if 
         }  # for loop
         
-        k$n=k$comp  # override n to comp
+        # assign the original values to the first recorded year 
+        k[k$Year==k$Year[1],]$comp = k_before[k_before$Year==k$Year[1],]$n
+        
+        # override n to comp
+        k$n=k$comp  
         
         k_after <<- k
-        
         
         title='Difference on Encounters from Two Consecutively-Recorded Years'
         
@@ -2155,3 +2156,4 @@ server <- function(input, output, session) {
 }
 
 shinyApp(ui, server)
+
