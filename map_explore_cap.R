@@ -484,6 +484,36 @@ ui <- fluidPage(
 
 server <- function(input, output, session) {
   
+  
+  ############ In `Detailed Evidence I & II` tabset
+  # Users cannot select both show_stackbar & show_trend (line graph) concurrently
+  observe({
+    if(input$show_trend1==TRUE) {
+      shinyjs::disable("show_stackbar")
+    }else{
+      shinyjs::enable("show_stackbar")
+    }
+    
+    if(input$show_stackbar==TRUE) {
+      shinyjs::disable("show_trend1")
+    }else{
+      shinyjs::enable("show_trend1")
+    }
+    
+    
+    if(input$show_trend2==TRUE) {
+      shinyjs::disable("show_stackbar2")
+    }else{
+      shinyjs::enable("show_stackbar2")
+    }
+    if(input$show_stackbar2==TRUE) {
+      shinyjs::disable("show_trend2")
+    }else{
+      shinyjs::enable("show_trend2")
+    }
+  })
+  
+  
   # For `Detailed Evidence II - or try` tabset
   # These reactive values keep track of the drilldown state
   # (NULL means inactive)
@@ -2482,6 +2512,7 @@ server <- function(input, output, session) {
                 text=~Description, hoverinfo="text") %>%
         # if you really do need explicit widths on a date axis, you can specify them as milliseconds.
         add_bars(width=1000*3600*30) %>%    # set consistent bar width
+        hide_legend() %>%
         layout(showlegend = T,
                bargap = 0.05,   # set bar gap
                yaxis=ay,
