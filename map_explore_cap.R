@@ -420,6 +420,7 @@ ui <- fluidPage(
                       # get rid of the extra line between two checkboxes
                       tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
                       checkboxInput("show_stackbar","Show stacked bar charts ",FALSE),
+                      checkboxInput("show_trend1","Show the trend in line graphs",FALSE),
                       checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
                       checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)), 
                column(width = 6,
@@ -427,7 +428,7 @@ ui <- fluidPage(
                                   label="Select Encounter type(s): ",
                                   choices=unique(three_mss$Category), multiple = T,
                                   selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(),
+               br(), br(), br(), br(), br(), br(), br(), br(),br(),
                plotlyOutput("dat_year", height = 300),
                br(),
                plotlyOutput("dat_month", height = 300),
@@ -444,7 +445,7 @@ ui <- fluidPage(
                       # get rid of the extra line between two checkboxes
                       tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
                       checkboxInput("show_stackbar2","Show stacked bar charts ",FALSE),
-                      checkboxInput("show_trend2","Show the trend in a line graph",FALSE),
+                      checkboxInput("show_trend2","Show the trend in line graphs",FALSE),
                       checkboxInput("show_penc2","Show percentage",FALSE)),  # Abs encounters -> percentage
                # checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
                column(width = 6,
@@ -1568,16 +1569,28 @@ server <- function(input, output, session) {
       
       sd1 <- SharedData$new(k)
       
-      pc <- sd1 %>%
-        plot_ly(source = "dat_year", name =~Category, # name of the legend
-                x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
-        #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-        layout(barmode=my_barmode, 
-               # title = "Encounters Aggregated by Year",
-               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-               yaxis=yaxi,
-               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+      if(input$show_trend1 == TRUE){
+        pc <- sd1 %>%
+          plot_ly(source = "dat_year", name =~Category, # name of the legend
+                  x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
+                  text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
+          #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+          layout(#barmode=my_barmode, 
+            annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+            yaxis=yaxi,
+            xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+      }else{
+        pc <- sd1 %>%
+          plot_ly(source = "dat_year", name =~Category, # name of the legend
+                  x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                  text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
+          #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
+          layout(barmode=my_barmode, 
+                 annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                 yaxis=yaxi,
+                 xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+        
+      }
       
       
       if (is.null(dat_year())) {
@@ -1777,13 +1790,26 @@ server <- function(input, output, session) {
       
       sd2 <- SharedData$new(k)
       
-      pc <- sd2 %>%
-        plot_ly(source = "dat_month", name =~Category, type='bar',
-                x = ~Month, y = ~n, color=~color, 
-                text=~Description, hoverinfo="text") %>% 
-        layout(barmode=my_barmode, annotations=title_style,
-               yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
-                                      rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))), visible=T))
+      if(input$show_trend1 == TRUE){
+        pc <- sd2 %>%
+          plot_ly(source = "dat_month", name =~Category,  type="scatter", mode='marker',
+                  x = ~Month, y = ~n, color=~color, 
+                  text=~Description, hoverinfo="text") %>% 
+          layout(#barmode=my_barmode, 
+            annotations=title_style,
+            yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                                   rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))), visible=T))
+        
+      }else{
+        pc <- sd2 %>%
+          plot_ly(source = "dat_month", name =~Category, type='bar',
+                  x = ~Month, y = ~n, color=~color, 
+                  text=~Description, hoverinfo="text") %>% 
+          layout(barmode=my_barmode, annotations=title_style,
+                 yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                                        rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))), visible=T))
+        
+      }
       
       if (is.null(dat_month())) {
         pic_month <<- pc
@@ -1985,13 +2011,26 @@ server <- function(input, output, session) {
       else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
       else dat='-28'
       
-      pc <- sd3 %>%
-        plot_ly(source = "dat_daily", name =~Category,
-                x = ~StartDate, y = ~n, color=~color, type="bar",
-                text=~Description, hoverinfo="text") %>% 
-        layout(barmode=my_barmode, annotations=title_style ,
-               yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
-                                      rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+      if(input$show_trend1 == TRUE){
+        pc <- sd3 %>%
+          plot_ly(source = "dat_daily", name =~Category,
+                  x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',
+                  text=~Description, hoverinfo="text") %>% 
+          layout(#barmode=my_barmode, 
+            annotations=title_style,
+            yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                   rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+        
+      }else{
+        pc <- sd3 %>%
+          plot_ly(source = "dat_daily", name =~Category,
+                  x = ~StartDate, y = ~n, color=~color, type="bar",
+                  text=~Description, hoverinfo="text") %>% 
+          layout(barmode=my_barmode, annotations=title_style ,
+                 yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                        rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+        
+      }
       
       if (is.null(dat_daily())) {
         pic_daily <<- pc
