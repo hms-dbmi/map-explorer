@@ -446,14 +446,14 @@ ui <- fluidPage(
                       tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
                       checkboxInput("show_stackbar2","Show stacked bar charts ",FALSE),
                       checkboxInput("show_trend2","Show the trend in line graphs",FALSE),
-                      checkboxInput("show_penc2","Show percentage",FALSE)),  # Abs encounters -> percentage
-               # checkboxInput("show_comp2","Show comparisons between adjacent years",FALSE)), 
+                      checkboxInput("show_penc2","Show percentage",FALSE),
+                      checkboxInput("show_rslider","Show range slider",FALSE)),  # Abs encounters -> percentage
                column(width = 6,
                       selectInput(inputId="enco_type2",
                                   label="Select Encounter type(s): ",
                                   choices=unique(three_mss$Category), multiple = T,
                                   selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(),
+               br(), br(), br(), br(), br(), br(), br(), br(),
                uiOutput("history"),
                plotlyOutput("dat_all", height = 300),br(),
                plotlyOutput("dat_comp", height = 300)    
@@ -667,22 +667,48 @@ server <- function(input, output, session) {
                             yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
         
         if(input$show_trend2 == TRUE){
-          pc <- plot_ly(k1,name =~Category, # name of the legend
-                        x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
-              annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-              yaxis=yaxi,
-              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,
+                xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,xaxis=list(title='Year'))
+          }
+          
           
         }else{
-          pc <- plot_ly(k1,name =~Category, # name of the legend
-                        x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, 
-                   annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-                   yaxis=yaxi,
-                   xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, 
+                     annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,
+                     xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, 
+                     annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,xaxis=list(title='Year'))
+          }
+          
         }
         
         pc
@@ -717,27 +743,53 @@ server <- function(input, output, session) {
                             yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
         
         if(input$show_trend2 == TRUE){
-          pc <- plot_ly(k1,name =~Category, # name of the legend
-                        x = ~Month, y = ~n, color=~color, type="scatter",mode='marker',    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
-              annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-              yaxis=yaxi,
-              xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
-                         rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="scatter",mode='marker',    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,
+                xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                           rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="scatter",mode='marker',    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,
+                xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
+          }
+          
         }else{
-          pc <- plot_ly(k1,name =~Category, # name of the legend
-                        x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-                   yaxis=yaxi,
-                   xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
-                              rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,
+                     xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                                rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,
+                     xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
+          }
+          
         }
         
         pc
         
-      }else {
+      }else {     # day
         
         # data-preprocessing
         k1 <- filter(k,Month == drills$current_month)
@@ -773,24 +825,50 @@ server <- function(input, output, session) {
         if(str_sub(mmonth,6,7) %in% thirty_one) dat='-31'
         else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
         else dat='-28'
-        
+      
         if(input$show_trend2 == TRUE){
-          pc <- plot_ly(k1,name =~Category, # name of the legend
-                        x = ~StartDate, y = ~n, color=~color,type="scatter", mode='marker', # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, annotations=title_style ,
-              yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
-                                     rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color,type="scatter", mode='marker', # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, annotations=title_style ,
+                yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                       rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color,type="scatter", mode='marker', # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, annotations=title_style ,
+                yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
+          }
           
+
         }else{
-          pc <- plot_ly(k1,name =~Category, # name of the legend
-                        x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, annotations=title_style ,
-                   yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
-                                          rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style ,
+                     yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                            rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k1,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style ,
+                     yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
+          }
+         
           
         }
+        
+        
         
         pc
       } 
@@ -813,9 +891,6 @@ server <- function(input, output, session) {
       if (!length(drills$current_yr)) {
         # data-preprocessing
         k1=count(k,Year,Category,color) 
-        # k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
-        #                          "\nCategory: ",k1$Category,
-        #                          "\nDifference: ",k1$n)
         
         if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
           ### percent
@@ -823,10 +898,7 @@ server <- function(input, output, session) {
           # k here corresponds to select_df
           k_new = k %>% count(Year)
           k_lj=left_join(k1,k_new,by="Year")
-          k1$n = k_lj$n.x/k_lj$n.y; 
-          # k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
-          #                          "\nCategory: ",k1$Category,
-          #                          "\nDifference: ",percent(k1$n))
+          k1$n = k_lj$n.x/k_lj$n.y
           yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
         }
         
@@ -974,21 +1046,47 @@ server <- function(input, output, session) {
         
         
         if(input$show_trend2 == TRUE){
-          pc <- plot_ly(k,name =~Category, # name of the legend
-                        x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',   # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
-              annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-              yaxis=yaxi,
-              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',   # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,
+                xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',   # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,xaxis=list(title='Year'))
+          }
+          
         }else{
-          pc <- plot_ly(k,name =~Category, # name of the legend
-                        x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, 
-                   annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-                   yaxis=yaxi,
-                   xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, 
+                     annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,
+                     xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
+            
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, 
+                     annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi, xaxis=list(title='Year'))
+          }
+          
         }
         
         pc
@@ -1159,22 +1257,47 @@ server <- function(input, output, session) {
         
         
         if(input$show_trend2 == TRUE){
-          pc <- plot_ly(k,name =~Category, # name of the legend
-                        x = ~Month, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
-              annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-              yaxis=yaxi,
-              xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
-                         rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,
+                xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                           rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                yaxis=yaxi,
+                xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
+          }
+          
         }else{
-          pc <- plot_ly(k,name =~Category, # name of the legend
-                        x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
-                   yaxis=yaxi,
-                   xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
-                              rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,
+                     xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                                rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
+                     yaxis=yaxi,
+                     xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
+          }
+          
         }
         
         pc
@@ -1358,21 +1481,43 @@ server <- function(input, output, session) {
         else dat='-28'
         
         if(input$show_trend2 == TRUE){
-          pc <- plot_ly(k,name =~Category, # name of the legend
-                        x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',     # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
-              annotations=title_style ,
-              yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
-                                     rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',     # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style ,
+                yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                       rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',     # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(#barmode=my_barmode, 
+                annotations=title_style ,
+                yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
+          }
+          
           
         }else{
-          pc <- plot_ly(k,name =~Category, # name of the legend
-                        x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
-                        text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, annotations=title_style ,
-                   yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
-                                          rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          if(input$show_rslider == TRUE){
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style ,
+                     yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                                            rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
+          }else{
+            title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
+                                yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
+            pc <- plot_ly(k,name =~Category, # name of the legend
+                          x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
+                          text=~Description, hoverinfo="text") %>%
+              layout(barmode=my_barmode, annotations=title_style ,
+                     yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
+          }
           
         }
         pc
