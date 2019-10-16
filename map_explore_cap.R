@@ -825,7 +825,7 @@ server <- function(input, output, session) {
         if(str_sub(mmonth,6,7) %in% thirty_one) dat='-31'
         else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
         else dat='-28'
-      
+        
         if(input$show_trend2 == TRUE){
           if(input$show_rslider == TRUE){
             pc <- plot_ly(k1,name =~Category, # name of the legend
@@ -845,7 +845,7 @@ server <- function(input, output, session) {
                 yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
           }
           
-
+          
         }else{
           if(input$show_rslider == TRUE){
             pc <- plot_ly(k1,name =~Category, # name of the legend
@@ -864,7 +864,7 @@ server <- function(input, output, session) {
               layout(barmode=my_barmode, annotations=title_style ,
                      yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
           }
-         
+          
           
         }
         
@@ -2538,7 +2538,7 @@ server <- function(input, output, session) {
                       grid_size = 5, sizeRange = c(25, 40))
     }
     
-    observeEvent(event_data("plotly_relayout", source = "plot"), {
+    observeEvent(c(event_data("plotly_click", source = "bar"),event_data("plotly_relayout", source = "plot")), {
       lasso <-event_data("plotly_relayout", source = "plot")
       phegrp_highlight <- event_data("plotly_click", source = "bar")$x
       
