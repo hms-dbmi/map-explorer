@@ -311,8 +311,25 @@ choices <- unique(three_mss$PatientNum)
 ###########
 ## Capstone project
 # shiny app
+
+######################
+## Variable Initialization
 bar_order <- 0
 
+# original color used in the MAP manuscript
+color_vis <- c("blue","darkcyan","brown","darkorange1","magenta","darkblue",
+               "darkseagreen4","red","coral4","chartreuse4","black","royalblue4",
+               "firebrick","darkolivegreen","mediumspringgreen","purple","gray50")
+
+# convert color to rgb format, for use in DT table
+colvis_rgb <- c()
+for (ele in color_vis){
+  tmp <- col2rgb(ele)
+  colvis_rgb <- c(colvis_rgb,str_glue("rgb({tmp[1]},{tmp[2]},{tmp[3]})"))
+}
+
+# put a message in console or server log; note this happens only when the app is started!
+cat("uiStub application started...\n")
 
 ui <- fluidPage(
   titlePanel("MAP Explorer"),
@@ -320,7 +337,6 @@ ui <- fluidPage(
   sidebarPanel(
     h4("You can explore the MAP data in this Shiny App!"),    
     tabsetPanel(
-      
       tabPanel("Explore",
                selectInput(inputId="individual_id",
                            label="Select Patient ID: ",
@@ -329,7 +345,6 @@ ui <- fluidPage(
                            selected = 1, selectize = F),
                plotlyOutput("bar")
       ),
-      
       tabPanel("File upload",
                h4("You can upload your own data files here!"),
                fileInput(inputId = "file1",
@@ -348,12 +363,15 @@ ui <- fluidPage(
                          , buttonLabel = "Browse..."
                          , placeholder = "No file selected"),
                fileInput(inputId = "file4"
-                         , label = "Choose file for Vitamin D values:"
+                         , label = "Choose file for Vitamin D values of MS patient:"
                          , multiple = F
                          , buttonLabel = "Browse..."
-                         , placeholder = "No file selected")
-               
-      )
+                         , placeholder = "No file selected"),
+               fileInput(inputId = "file5"
+                         , label = "Choose file for CUIs lists of MS patient:"
+                         , multiple = F
+                         , buttonLabel = "Browse..."
+                         , placeholder = "No file selected"))
     ),
     h3("How to use"),
     p("The default visualization shows the results for Patient 1.
@@ -369,22 +387,8 @@ ui <- fluidPage(
     tabsetPanel(
       tabPanel("Main",
                h3("MAP Manhattan Plot"),
-               # conditionalPanel(
-               # condition= "ncol(df)>0",
                fluidRow(
-                 plotlyOutput("plot",height = 500))  #)# for conditionalPanel
-               # br(),
-               # textOutput("sig_tab"),
-               # br(),
-               # textOutput("cond_num"),     #report number of phecodes above threshold
-               # textOutput("brush"),        #report number of phecodes both above threshold and selected
-               # br(),
-               # checkboxInput("details","More details (with MAP cutoff):",FALSE),
-               # DT::DTOutput("panel"),
-               # tags$head(tags$style("#sig_tab{color: black; font-size: 20px;}")),
-               # tags$head(tags$style("#cond_num{color: black; font-size: 15px; font-style:italic;}")),  
-               # tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}")))
-               
+                 plotlyOutput("plot",height = 500))
       ),
       tabPanel("Info Table",
                textOutput("sig_tab"),
@@ -404,10 +408,8 @@ ui <- fluidPage(
                # for Word Cloud
                # MUST load the ECharts javascript library in advance
                loadEChartsLibrary(),
-               conditionalPanel(
-                 condition= "ncol(df)>0",
                  tags$div(id="wordcloud", style="width:100%;height:500px;"),
-                 deliverChart(div_id = "wordcloud")    )
+                 deliverChart(div_id = "wordcloud")    
                
       ),
       tabPanel("Detailed Evidence",
