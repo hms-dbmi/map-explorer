@@ -1,45 +1,17 @@
+
 # Already inside server
 output$pageStub <- renderUI(fluidPage(
   titlePanel("MAP Explorer"),
   
   sidebarPanel(
     h4("You can explore the MAP data in this Shiny App!"),
-    tabsetPanel(
-      tabPanel("Explore",
-               selectInput(inputId="individual_id",
-                           label="Select Patient ID: ",
-                           choices=c(1:(ncol(df)-2)),
-                           # choices=c(1:nrow(dat)),
-                           selected = 1, selectize = F),
-               plotlyOutput("bar")
-      ),
-      tabPanel("File upload",
-               h4("You can upload your own data files here!"),
-               fileInput(inputId = "file1",
-                         label = "Choose file for Phecode info:",
-                         multiple = F,
-                         buttonLabel = "Browse...",
-                         placeholder = "No file selected"),
-               fileInput(inputId = "file2"
-                         , label = "Choose file for Patients and MAP cutoff:"
-                         , multiple = F
-                         , buttonLabel = "Browse..."
-                         , placeholder = "No file selected"),
-               fileInput(inputId = "file3"
-                         , label = "Choose file for encounters of MS patient:"
-                         , multiple = F
-                         , buttonLabel = "Browse..."
-                         , placeholder = "No file selected"),
-               fileInput(inputId = "file4"
-                         , label = "Choose file for Vitamin D values of MS patient:"
-                         , multiple = F
-                         , buttonLabel = "Browse..."
-                         , placeholder = "No file selected"),
-               fileInput(inputId = "file5"
-                         , label = "Choose file for CUIs lists of MS patient:"
-                         , multiple = F
-                         , buttonLabel = "Browse..."
-                         , placeholder = "No file selected"))
+    tabPanel("Explore",
+             selectInput(inputId="individual_id",
+                         label="Select Patient ID: ",
+                         choices=c(1:(ncol(df)-2)),
+                         # choices=c(1:nrow(dat)),
+                         selected = 1, selectize = F),
+             plotlyOutput("bar")
     ),
     h3("How to use"),
     p("The default visualization shows the results for Patient 1.
@@ -154,8 +126,9 @@ output$pageStub <- renderUI(fluidPage(
 
 
 
-
-
+#############################################################
+#############################################################
+#############################################################
 ######## From the contents under the original `Server` session
 
 ############ In `Detailed Evidence I & II` tabset
@@ -175,7 +148,6 @@ observe({
   }else{
     shinyjs::enable("show_trend1")
   }
-  
   
   if(input$show_trend2==TRUE) {
     shinyjs::disable("show_stackbar2")
@@ -1938,6 +1910,12 @@ output$bar <- renderPlotly({
   ratio_df <- ratio_df %>% mutate(color = color_vis) %>% arrange(desc(Proportion_abv_thrh)) 
   
   bar_order <<- ratio_df %>% .$Groupnum
+
+  # bar_order1 <- reactiveVal(
+  #   bar_order
+  # )
+  # bar_order1 <- reactive({ return(bar_order) })
+  # bar_order1 <- reactiveValues(value = bar_order)
   
   # if clicked on the xth bar, only that bar will be highlighted, the rest will grey out(in this case become more transparent)
   if(!is.null(phegrp_highlight)){
@@ -1993,8 +1971,6 @@ output$bar <- renderPlotly({
   
 })         
 
-
-
 # For MAIN tabset
 ####################
 # the Manhattan plot
@@ -2022,7 +1998,7 @@ output$plot <- renderPlotly({
   if(!is.null(phegrp_highlight)){
     subman_df <- subset(man_df,man_df$groupnum==bar_order[phegrp_highlight]) %>% subset(is_highlight=="yes")
   }
-  
+
   tmp <- ggplot(man_df, aes(x = phenotypes, y = map_prob,text = description)) +
     
     # Show all points
@@ -2106,7 +2082,8 @@ output$brush <- renderText({
   if(!is.null(phegrp_highlight)){
     subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight]) 
   }
-  
+
+
   num_count <- nrow(subman_df) %>% as.numeric
   
   paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
@@ -2176,16 +2153,13 @@ output$panel <- DT::renderDT({
   
 })
 
-
-###############
+##############
 # Word Cloud  - only show what's selected in the Manhattan plot;
 observeEvent(input$individual_id, {
 
-  cat('id:\t'); cat(input$individual_id);cat('\tothers: ');cat(); cat('\n')
-
   # the wordcloud will also react to the change made in the bar chart
   phegrp_highlight <- event_data("plotly_click", source = "bar")$x
-
+  
   # fix a minor problem so that users don't have to move the window a little bit to make wordcloud display
   if(is.null(event_data("plotly_relayout", source = "plot"))){
 
@@ -2194,20 +2168,25 @@ observeEvent(input$individual_id, {
     max_sub <- nrow(vis_df)*mat
     sub_df <- vis_df_all[min_sub:max_sub, ]
 
-    man_df <- tibble()
-    for (ele in bar_order){
-      dff <- sub_df[sub_df$groupnum == ele,]
-      man_df <- rbind(man_df,dff)
-    }
+    # man_df <- tibble()
+    # for (ele in bar_order){
+    #   dff <- sub_df[sub_df$groupnum == ele,]
+    #   man_df <- rbind(man_df,dff)
+    # }
 
-    # man_df$phenotypes <- 1:nrow(man_df)
+    man_df=sub_df
+    
+    man_df$phenotypes <- 1:nrow(man_df)
     subman_df <- subset(man_df, is_highlight=="yes")
 
+    
+    ##### [Amazing] Here I am able to capture bar_order.
     if(!is.null(phegrp_highlight)){
       subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight])
+
     }
 
-    word_cl <- subman_df %>% .[,c(7,6)]  #extract columns map_prob and pheno
+    word_cl <- subman_df %>% .[,c(7,2)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
 
     # the actual word cloud generating function
@@ -2217,7 +2196,7 @@ observeEvent(input$individual_id, {
                     grid_size = 5, sizeRange = c(25, 40))
   }
 
-  
+
   observeEvent(c(event_data("plotly_click", source = "bar"),event_data("plotly_relayout", source = "plot")), {
     lasso <-event_data("plotly_relayout", source = "plot")
     phegrp_highlight <- event_data("plotly_click", source = "bar")$x
@@ -2227,12 +2206,15 @@ observeEvent(input$individual_id, {
     max_sub <- nrow(vis_df)*mat
     sub_df <- vis_df_all[min_sub:max_sub, ]
 
-    man_df <- tibble()
-    for (ele in bar_order){
-      dff <- sub_df[sub_df$groupnum == ele,]
-      man_df <- rbind(man_df,dff)
-    }
-
+    # man_df <- tibble()
+    # for (ele in bar_order){
+    #   dff <- sub_df[sub_df$groupnum == ele,]
+    #   man_df <- rbind(man_df,dff)
+    # }
+    # 
+    
+    man_df=sub_df
+    
     man_df$phenotypes <- 1:nrow(man_df)
     subman_df <- subset(man_df, is_highlight=="yes")
 
@@ -2244,13 +2226,14 @@ observeEvent(input$individual_id, {
                                           map_prob >= y.min & map_prob <= y.max)
     }
 
+    ##### [Amazing] Here I am able to capture bar_order.
     if(!is.null(phegrp_highlight)){
       subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight])
     }
 
-    word_cl <- subman_df %>% .[,c(7,6)]  #extract columns map_prob and pheno
+    word_cl <- subman_df %>% .[,c(7,2)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
-
+    
     # the actual word cloud generating function
     renderWordcloud("wordcloud", data = word_cl,
                     shape = 'circle',
@@ -2258,8 +2241,6 @@ observeEvent(input$individual_id, {
                     grid_size = 5, sizeRange = c(25, 40))
   })
 })
-
-
 
 
 # For VD tabset
