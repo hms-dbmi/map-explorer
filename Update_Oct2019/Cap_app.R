@@ -285,7 +285,7 @@ server <- function(input, output, session) {
   df1 <- reactiveVal();
   vis_df_all1 <- reactiveVal(); groupinfo_df1 <- reactiveVal()
   ratio_df1 <- reactiveVal()
-  three_ms_vd1 <- reactiveVal(); three_mss1 <- reactiveVal()
+  three_ms1 <- reactiveVal(); three_ms_vd1 <- reactiveVal(); three_mss1 <- reactiveVal()
   
   ##########
   #### Read in the data
@@ -325,10 +325,6 @@ server <- function(input, output, session) {
       
       phe_man_indiv1 <- phe_man %>% tibble %>% mutate(map_prob = df[,i_indi])
       colnames(phe_man_indiv1)[1] <- "phecode"
-      # phe_man_indiv1 <- phe_man %>% tibble
-      # colnames(phe_man_indiv1)[1] <- "phecode"
-      # phe_man_indiv1$map_prob <- df[,i_indi] 
-      # phe_man_indiv1$map_prob = phe_man_indiv1$map_prob[[1]]
       
       # convert from e.g. 611_1 to 611.1
       phe_man_indiv1 <- phe_man_indiv1 %>% mutate(phecode = phecode %>% str_replace('_','.') %>% as.character)
@@ -523,6 +519,8 @@ server <- function(input, output, session) {
   ######### Read in the data end.
   ###############################
   
+  
+  ################################ !!Important
   ### Write in the "global" environment so that we can get it from map-explorer.R
   observe({
     df11 <<- df1()
@@ -533,34 +531,67 @@ server <- function(input, output, session) {
     three_mss11 <<- three_mss1()
   })
   
-
-  # build menu; same on all pages
+  
+  ############################################################################
+  # build menu; only show all pages after users finish uploading all the files
+  ## This the default page; In order to enable data uploading along the way, don't put the codes inside observe({})
+  fname = "home.R"
+  cat(paste0("Session filename: ", fname, ".\n"))      # print the URL for this session
+  source(fname, local=TRUE)                            # load and run server code for this page
   output$uiStub <- renderUI(tagList(             # a single-output stub ui basically lets you
     fluidPage(                                  #     move the ui into the server function
       fluidRow(
         column(12,
-               HTML("<h2><a href='?home'>Home</a> | ",
-                    "<a href='?map-explorer'>MAP Explorer</a>",
-                    "</h2>")
+               HTML("<h2><a href='?home'>Home</a>","</h2>")
         )
       ),
       uiOutput("pageStub")                     # loaded server code should render the rest of the page to this output$
     )                                            
   ))
   
+
+  ## show all pages immediately after users finish uploading all the files
+  observe({
+    if( !is.null(df1()) & !is.null(vis_df_all1()) & !is.null(groupinfo_df1()) & !is.null(ratio_df1())
+       & !is.null(three_mss1()) & !is.null(three_ms_vd1())) {
+      
+      fname = "map-explorer.R"
+      cat(paste0("Session filename: ", fname, ".\n"))      # print the URL for this session
+      source(fname, local=TRUE)                            # load and run server code for this page
+      
+      output$uiStub <- renderUI(tagList(             # a single-output stub ui basically lets you
+        fluidPage(                                  #     move the ui into the server function
+          fluidRow(
+            # column(12,
+            #        HTML("<h2><a href='?home'>Home</a> | ",
+            #             "<a href='?map-explorer'>MAP Explorer</a>",
+            #             "</h2>")
+            # )
+            column(12,
+             HTML("<h5><a href='?home'>Back to Home</a> ","</h5>") )# for column 
+          ),
+          uiOutput("pageStub")                     # loaded server code should render the rest of the page to this output$
+        )                                            
+      ))
+
+    }  # for the `if`
+  })
+  ############################################################################
+  # finish building menu;
   
-  setwd("~/Desktop/Capstone/Oct2019_NEW/")
+  ## some codes used before
+  # setwd("~/Desktop/Capstone/Oct2019_NEW/") #don't need to set this actually
   # load server code for page specified in URL
-  validFiles = c("home.R",                             # valid files must be hardcoded here
-                 "map-explorer.R")                     #    for security (use all lower-case
-  #    names to prevent Unix case problems)
-  fname = isolate(session$clientData$url_search)       # isolate() deals with reactive context
-  if(nchar(fname)==0) { fname = "?home" }              # blank means home page
-  fname = paste0(substr(fname, 2, nchar(fname)), ".R") # remove leading "?", add ".R"
-  
-  cat(paste0("Session filename: ", fname, ".\n"))      # print the URL for this session
-  
-  source(fname, local=TRUE)                            # load and run server code for this page
+  # validFiles = c("home.R",                             # valid files must be hardcoded here
+  #                "map-explorer.R")                     #    for security (use all lower-case names to prevent Unix case problems)
+  # fname = isolate(session$clientData$url_search)       # isolate() deals with reactive context
+  # if(nchar(fname)==0) { fname = "?home" }              # blank means home page
+  # fname = paste0(substr(fname, 2, nchar(fname)), ".R") # remove leading "?", add ".R"
+  # 
+  # cat(paste0("Session filename: ", fname, ".\n"))      # print the URL for this session
+  # 
+  # source(fname, local=TRUE)                            # load and run server code for this page
+  # 
 
 }
 
