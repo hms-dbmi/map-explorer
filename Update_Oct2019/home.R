@@ -1,11 +1,12 @@
 output$pageStub <- renderUI(tagList(
    fluidRow(
       column(10,
-         h3('This is the home page of our excellent web site.'),
+         h3('This is the home page of our excellent web app.'),
          h5('You can upload your data in this page.'),
-         h5("Once you upload the data, there will be a second page that displays summarized EHR information both on the overview level, 
+         h5("Once you finish uploading all the required data, the original page will refresh and show you a new page that displays summarized EHR information both on the overview level, 
             and on a detailed level with supporting evidence such as different lab measurement for the selected diseases for each patient."),
          h5('On that page you can ...'),
+         h5('You can always go back to the home page by clicking `Back to Home`'),
          
          h4("You can upload your own data files here!"),
          fileInput(inputId = "file1",
@@ -36,3 +37,6 @@ output$pageStub <- renderUI(tagList(
       )
    )
 ))
+
+
+
