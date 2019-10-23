@@ -1,4 +1,20 @@
 
+##############################
+# load the data from Cap_app.R
+df <- df11
+vis_df_all <- vis_df_all11
+groupinfo_df <- groupinfo_df11
+ratio_df <- ratio_df11
+three_ms_vd <- three_ms_vd11
+three_mss <- three_mss11
+
+vis_df = vis_df_all[1:(nrow(vis_df_all)/(ncol(df)-2)),]
+# print(dim(vis_df))
+
+# check whether loaded successfully
+# cat('inside map...\n'); print(head(ratio_df))
+
+
 # Already inside server
 output$pageStub <- renderUI(fluidPage(
   titlePanel("MAP Explorer"),
@@ -125,7 +141,6 @@ output$pageStub <- renderUI(fluidPage(
 )    # ")" for renderUI
 
 
-
 #############################################################
 #############################################################
 #############################################################
@@ -134,7 +149,7 @@ output$pageStub <- renderUI(fluidPage(
 ############ In `Detailed Evidence I & II` tabset
 # Users cannot select both show_stackbar & show_trend (line graph) concurrently
 observe({
-  
+
   if(is.null(input$show_trend1) | is.null(input$show_trend2) | is.null(input$show_stackbar) | is.null(input$show_stackbar2))  return(NULL)
     
   if(input$show_trend1==TRUE) {
@@ -872,8 +887,6 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
               g$Month=paste0(yyear,'-',(month(g$Month) + 1+j),'-01') %>% as.Date #convert from character to Date
               g$n=0; k=rbind(k,g) #generate new rows; need to be sorted later
               j=j+1; if(month(unique(g$Month)) >= (month(yr_new)-1) ) flag=0
-              # print(month(unique(g$Month))); print('...')
-              # print(month(yr_new)-1); print('\n')
             }
           }
           
@@ -1910,12 +1923,6 @@ output$bar <- renderPlotly({
   ratio_df <- ratio_df %>% mutate(color = color_vis) %>% arrange(desc(Proportion_abv_thrh)) 
   
   bar_order <<- ratio_df %>% .$Groupnum
-
-  # bar_order1 <- reactiveVal(
-  #   bar_order
-  # )
-  # bar_order1 <- reactive({ return(bar_order) })
-  # bar_order1 <- reactiveValues(value = bar_order)
   
   # if clicked on the xth bar, only that bar will be highlighted, the rest will grey out(in this case become more transparent)
   if(!is.null(phegrp_highlight)){
@@ -2168,12 +2175,6 @@ observeEvent(input$individual_id, {
     max_sub <- nrow(vis_df)*mat
     sub_df <- vis_df_all[min_sub:max_sub, ]
 
-    # man_df <- tibble()
-    # for (ele in bar_order){
-    #   dff <- sub_df[sub_df$groupnum == ele,]
-    #   man_df <- rbind(man_df,dff)
-    # }
-
     man_df=sub_df
     
     man_df$phenotypes <- 1:nrow(man_df)
@@ -2206,13 +2207,6 @@ observeEvent(input$individual_id, {
     max_sub <- nrow(vis_df)*mat
     sub_df <- vis_df_all[min_sub:max_sub, ]
 
-    # man_df <- tibble()
-    # for (ele in bar_order){
-    #   dff <- sub_df[sub_df$groupnum == ele,]
-    #   man_df <- rbind(man_df,dff)
-    # }
-    # 
-    
     man_df=sub_df
     
     man_df$phenotypes <- 1:nrow(man_df)
@@ -2246,6 +2240,8 @@ observeEvent(input$individual_id, {
 # For VD tabset
 ###############
 output$vitd <- renderPlotly({
+  
+  # cat('inside vitd...\n'); print(head(three_ms_vd))
   
   id <- match(input$patient_vd_num, choices)
   pat_encounter <- which(three_ms_vd$PatientNum == choices[id])
