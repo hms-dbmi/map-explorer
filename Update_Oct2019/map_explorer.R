@@ -20,6 +20,7 @@ output$pageStub <- renderUI(fluidPage(
   titlePanel("MAP Explorer"),
   
   sidebarPanel(
+    tags$style(".well {background-color:#ffffff;}"),
     h4("You can explore the MAP data in this Shiny App!"),
     tabPanel("Explore",
              selectInput(inputId="individual_id",
