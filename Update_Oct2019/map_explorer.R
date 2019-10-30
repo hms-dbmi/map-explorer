@@ -9,7 +9,6 @@ three_ms_vd <- three_ms_vd11
 three_mss <- three_mss11
 
 vis_df = vis_df_all[1:(nrow(vis_df_all)/(ncol(df)-2)),]
-# print(dim(vis_df))
 
 # check whether loaded successfully
 # cat('inside map...\n'); print(head(ratio_df))
@@ -17,11 +16,13 @@ vis_df = vis_df_all[1:(nrow(vis_df_all)/(ncol(df)-2)),]
 
 # Already inside server
 output$pageStub <- renderUI(fluidPage(
-  titlePanel("MAP Explorer"),
   
+  # titlePanel("MAP Explorer"),
   sidebarPanel(
-    tags$style(".well {background-color:#ffffff;}"),
-    h4("You can explore the MAP data in this Shiny App!"),
+    
+    tags$style(".well {background-color:#ffffff;}"),   # set the backrgound color to be transparent
+    
+    h2("MAP Explorer"),
     tabPanel("Explore",
              selectInput(inputId="individual_id",
                          label="Select Patient ID: ",
@@ -37,17 +38,17 @@ output$pageStub <- renderUI(fluidPage(
       It would also output a Manhattan plot showing the MAP probabilities of each phecodes of this selected patient.
       You can hover over the points in Manhattan plot or Barchart to get more information.
       Enjoy playing around with it!")
-    ),
+  ),
   
   mainPanel(
     useShinyjs(),
     tabsetPanel(
-      tabPanel("Main",
+      tabPanel("Overview: Plot",
                h3("MAP Manhattan Plot"),
                fluidRow(
                  plotlyOutput("plot",height = 500))
       ),
-      tabPanel("Info Table",
+      tabPanel("Overview: Table",
                textOutput("sig_tab"),
                br(),
                textOutput("cond_num"),     #report number of phecodes above threshold
@@ -60,42 +61,43 @@ output$pageStub <- renderUI(fluidPage(
                tags$head(tags$style("#brush{color: black; font-size: 14px; font-style:italic;}"))
       ),
       
-      tabPanel("Word Cloud",
-               h3("Word Cloud of Phenotypes based on MAP Probabilities"),
-               # for Word Cloud
-               # MUST load the ECharts javascript library in advance
+      tabPanel("Overview: Word Cloud",
+               h3("Word Cloud of Phenotypes based on MAP Probabilities"), 
+               checkboxInput("not_hori","Visualize the phenotypes not only horizontally",FALSE),
+               br(),
+               # for Word Cloud; MUST load the ECharts javascript library in advance
                loadEChartsLibrary(),
                tags$div(id="wordcloud", style="width:100%;height:500px;"),
                deliverChart(div_id = "wordcloud")
                
       ),
-      tabPanel("Detailed Evidence",
-               h3("MS Data Overview"),
-               column(width = 6,
-                      selectInput(inputId="patient_num",
-                                  label="Select Patient Number: ",
-                                  choices=choices,
-                                  selected = 1),
-                      # get rid of the extra line between two checkboxes
-                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-                      checkboxInput("show_stackbar","Show stacked bar charts ",FALSE),
-                      checkboxInput("show_trend1","Show the trend in line graphs",FALSE),
-                      checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
-                      checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)),
-               column(width = 6,
-                      selectInput(inputId="enco_type",
-                                  label="Select Encounter type(s): ",
-                                  choices=unique(three_mss$Category), multiple = T,
-                                  selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(), br(),br(),
-               plotlyOutput("dat_year", height = 300),
-               br(),
-               plotlyOutput("dat_month", height = 300),
-               br(),
-               plotlyOutput("dat_daily", height = 300)
-      ),
-      tabPanel("Detailed Evidence II",
-               h3("MS Data Overview"),
+      # tabPanel("Detailed Evidence",
+      #          h3("MS Data Overview"),
+      #          column(width = 6,
+      #                 selectInput(inputId="patient_num",
+      #                             label="Select Patient Number: ",
+      #                             choices=choices,
+      #                             selected = 1),
+      #                 # get rid of the extra line between two checkboxes
+      #                 tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+      #                 checkboxInput("show_stackbar","Show stacked bar charts ",FALSE),
+      #                 checkboxInput("show_trend1","Show the trend in line graphs",FALSE),
+      #                 checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
+      #                 checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)),
+      #          column(width = 6,
+      #                 selectInput(inputId="enco_type",
+      #                             label="Select Encounter type(s): ",
+      #                             choices=unique(three_mss$Category), multiple = T,
+      #                             selected = unique(three_mss$Category))),
+      #          br(), br(), br(), br(), br(), br(), br(), br(),br(),
+      #          plotlyOutput("dat_year", height = 300),
+      #          br(),
+      #          plotlyOutput("dat_month", height = 300),
+      #          br(),
+      #          plotlyOutput("dat_daily", height = 300)
+      # ),
+      tabPanel("MS Summary",
+               h3("MS Summary"),
                column(width = 6,
                       selectInput(inputId="patient_num2",
                                   label="Select Patient Number: ",
@@ -112,13 +114,13 @@ output$pageStub <- renderUI(fluidPage(
                                   label="Select Encounter type(s): ",
                                   choices=unique(three_mss$Category), multiple = T,
                                   selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(), br(),
+               br(), br(), br(), br(), br(), br(), br(), br(), br(),
                uiOutput("history"),
                plotlyOutput("dat_all", height = 300),br(),
                plotlyOutput("dat_comp", height = 300)
       ),
-      tabPanel("Detailed Evidence III",
-               h3("MS Data Overview"),
+      tabPanel("Detailed MS Daily",
+               h3("Detailed MS Daily"),
                column(width = 6,
                       selectInput(inputId="patient_vd_num",
                                   label="Select Patient Number: ",
@@ -131,7 +133,7 @@ output$pageStub <- renderUI(fluidPage(
                                   selected = unique(three_mss$Category))),
                br(), br(), br(), br(), br(), br(), br(),
                h4("Encounters by Day"),
-               plotlyOutput("all_six", height = 600),
+               plotlyOutput("all_six", height = 650),
                br(),
                h4("Vitamin D Levels"),
                checkboxInput("show_trend","Show the trend in a line graph",FALSE),
@@ -150,9 +152,9 @@ output$pageStub <- renderUI(fluidPage(
 ############ In `Detailed Evidence I & II` tabset
 # Users cannot select both show_stackbar & show_trend (line graph) concurrently
 observe({
-
+  
   if(is.null(input$show_trend1) | is.null(input$show_trend2) | is.null(input$show_stackbar) | is.null(input$show_stackbar2))  return(NULL)
-    
+  
   if(input$show_trend1==TRUE) {
     shinyjs::disable("show_stackbar")
   }else{
@@ -283,6 +285,8 @@ observeEvent(input$patient_num2, {
 # 1) when select a new patient, show the default overview.
 # 2) when change the encounter type, update the plots accordingly
 observeEvent(c(input$enco_type2,input$patient_num2),{
+  
+  # print(head(three_mss))
   
   # data pre-processing shared by all
   id <- match(input$patient_num2, choices)
@@ -2006,7 +2010,7 @@ output$plot <- renderPlotly({
   if(!is.null(phegrp_highlight)){
     subman_df <- subset(man_df,man_df$groupnum==bar_order[phegrp_highlight]) %>% subset(is_highlight=="yes")
   }
-
+  
   tmp <- ggplot(man_df, aes(x = phenotypes, y = map_prob,text = description)) +
     
     # Show all points
@@ -2090,8 +2094,8 @@ output$brush <- renderText({
   if(!is.null(phegrp_highlight)){
     subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight]) 
   }
-
-
+  
+  
   num_count <- nrow(subman_df) %>% as.numeric
   
   paste0("The total number of phecodes that are both above their threshold and are selected is ", num_count,".")
@@ -2164,77 +2168,95 @@ output$panel <- DT::renderDT({
 ##############
 # Word Cloud  - only show what's selected in the Manhattan plot;
 observeEvent(input$individual_id, {
-
+  
   # the wordcloud will also react to the change made in the bar chart
   phegrp_highlight <- event_data("plotly_click", source = "bar")$x
   
   # fix a minor problem so that users don't have to move the window a little bit to make wordcloud display
   if(is.null(event_data("plotly_relayout", source = "plot"))){
-
+    
     mat <- match(input$individual_id,1:(ncol(df)-2))
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1
     max_sub <- nrow(vis_df)*mat
     sub_df <- vis_df_all[min_sub:max_sub, ]
-
+    
     man_df=sub_df
     
     man_df$phenotypes <- 1:nrow(man_df)
     subman_df <- subset(man_df, is_highlight=="yes")
-
+    
     
     ##### [Amazing] Here I am able to capture bar_order.
     if(!is.null(phegrp_highlight)){
       subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight])
-
+      
     }
-
+    
     word_cl <- subman_df %>% .[,c(7,2)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
-
+    
     # the actual word cloud generating function
-    renderWordcloud("wordcloud", data = word_cl,
-                    shape = 'circle',
-                    rotationRange = c(-50, 50),
-                    grid_size = 5, sizeRange = c(25, 40))
+    if(input$not_hori == TRUE){
+      renderWordcloud("wordcloud", data = word_cl,
+                      shape = 'diamond',
+                      rotationRange = c(-50, 50),
+                      grid_size = 5, sizeRange = c(25, 40))
+    }else{
+      renderWordcloud("wordcloud", data = word_cl,
+                      shape = 'diamond',
+                      rotationRange = c(0,0), #c(-50, 50),
+                      grid_size = 5, sizeRange = c(25, 40))
+    }
+
   }
-
-
-  observeEvent(c(event_data("plotly_click", source = "bar"),event_data("plotly_relayout", source = "plot")), {
+  
+  
+  # React to both the click on the bar chart & the selection in the Manhattan plot
+  observe({
     lasso <-event_data("plotly_relayout", source = "plot")
     phegrp_highlight <- event_data("plotly_click", source = "bar")$x
-
+    
     mat <- match(input$individual_id,1:(ncol(df)-2))
     min_sub <- nrow(vis_df)*mat-nrow(vis_df)+1
     max_sub <- nrow(vis_df)*mat
     sub_df <- vis_df_all[min_sub:max_sub, ]
-
+    
     man_df=sub_df
     
     man_df$phenotypes <- 1:nrow(man_df)
     subman_df <- subset(man_df, is_highlight=="yes")
-
+    
     if (!is.null(lasso) & length(lasso)==4) {
       x.min <- lasso[1]; x.max <- lasso[2]
       y.min <- lasso[3]; y.max <- lasso[4]
-
+      
       subman_df <- subman_df %>% filter(phenotypes >= x.min & phenotypes <= x.max &
                                           map_prob >= y.min & map_prob <= y.max)
     }
-
+    
     ##### [Amazing] Here I am able to capture bar_order.
     if(!is.null(phegrp_highlight)){
       subman_df <- subset(subman_df,subman_df$groupnum==bar_order[phegrp_highlight])
     }
-
+    
     word_cl <- subman_df %>% .[,c(7,2)]  #extract columns map_prob and pheno
     colnames(word_cl) <- c("name","value")
     
     # the actual word cloud generating function
-    renderWordcloud("wordcloud", data = word_cl,
-                    shape = 'circle',
-                    rotationRange = c(-90, 90),
-                    grid_size = 5, sizeRange = c(25, 40))
-  })
+    if(input$not_hori == TRUE){
+      renderWordcloud("wordcloud", data = word_cl,
+                      shape = 'diamond',
+                      rotationRange = c(-50, 50),
+                      grid_size = 5, sizeRange = c(25, 40))
+    }else{
+      renderWordcloud("wordcloud", data = word_cl,
+                      shape = 'diamond',
+                      rotationRange = c(0,0), #c(-50, 50),
+                      grid_size = 5, sizeRange = c(25, 40))
+    }
+    
+  })  
+    
 })
 
 
@@ -2301,7 +2323,7 @@ observeEvent(input$enco_vd_type,{
       ticklen = 1,
       tickwidth = 1,
       tickcolor = toRGB("grey") #,
-      # title='Encounters'
+      #title='Encounters', visible=T
     )
     
     id <- match(input$patient_vd_num, choices)
@@ -2330,12 +2352,12 @@ observeEvent(input$enco_vd_type,{
                yanchor = 1,
                yref = "paper",
                ysizemode = "pixel",
-               fillcolor = toRGB("gray80"),
+               fillcolor = toRGB("white"),
                line = list(color = "transparent")
              )) %>%  #add rangeslider
-      add_annotations(
+      add_annotations(                ## format subtitles
         text = ~unique(Category),
-        x = 0.5,
+        x = 0, #0.5,
         y = 1,
         yref = "paper",
         xref = "paper",
@@ -2348,7 +2370,7 @@ observeEvent(input$enco_vd_type,{
       filter(Category %in% keep_category) %>%
       group_by(Category) %>%
       do(p = panel(.)) %>%
-      subplot(nrows = NROW(.), shareX = TRUE)
+      subplot(nrows = NROW(.), shareX = T,margin = 0.04,heights = c(0.15,0.175,0.175,0.175,0.175,0.15)) # so that heights looks evenly for all subplots when visualized
     
     pc
   })
