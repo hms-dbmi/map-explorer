@@ -15,7 +15,7 @@ library(lubridate)
 
 # for Shiny
 library(shiny); library(shinydashboard); library(shinyjs)
-library(leaflet)
+library(ggrepel)
 library(DT)
 library(reshape2)
 library(crosstalk)
@@ -292,6 +292,7 @@ server <- function(input, output, session) {
   
   ######### Read in the data end.
   ###############################
+  
   
   
   ############################################################################
