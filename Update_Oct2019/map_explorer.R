@@ -23,14 +23,14 @@ output$pageStub <- renderUI(fluidPage(
     tags$style(".well {background-color:#ffffff;}"),   # set the backrgound color to be transparent
     
     h2("MAP Explorer"),
-    tabPanel("Explore",
-             selectInput(inputId="individual_id",
-                         label="Select Patient ID: ",
-                         choices=c(1:(ncol(df)-2)),
-                         # choices=c(1:nrow(dat)),
-                         selected = 1, selectize = F),
-             plotlyOutput("bar")
-    ),
+    
+    selectInput(inputId="individual_id",
+                label="Select Patient ID: ",
+                choices=c(1:(ncol(df)-2)),
+                # choices=c(1:nrow(dat)),
+                selected = 1, selectize = F),
+    plotlyOutput("bar"),
+    
     h3("How to use"),
     p("The default visualization shows the results for Patient 1.
       You can also select any Patient ID from the dropdown list.
@@ -39,16 +39,15 @@ output$pageStub <- renderUI(fluidPage(
       You can hover over the points in Manhattan plot or Barchart to get more information.
       Enjoy playing around with it!")
   ),
-  
   mainPanel(
     useShinyjs(),
-    tabsetPanel(
-      tabPanel("Overview: Plot",
+    tabsetPanel(id='nav',
+      tabPanel("Overview: Plot", 
                h3("MAP Manhattan Plot"),
                fluidRow(
                  plotlyOutput("plot",height = 500))
       ),
-      tabPanel("Overview: Table",
+      tabPanel("Overview: Table",  #tags$head(includeScript("goman.js")),
                textOutput("sig_tab"),
                br(),
                textOutput("cond_num"),     #report number of phecodes above threshold
@@ -70,7 +69,7 @@ output$pageStub <- renderUI(fluidPage(
                tags$div(id="wordcloud", style="width:100%;height:500px;"),
                deliverChart(div_id = "wordcloud")
                
-      ),
+      ) #,
       # tabPanel("Detailed Evidence",
       #          h3("MS Data Overview"),
       #          column(width = 6,
@@ -96,48 +95,48 @@ output$pageStub <- renderUI(fluidPage(
       #          br(),
       #          plotlyOutput("dat_daily", height = 300)
       # ),
-      tabPanel("MS Summary",
-               h3("MS Summary"),
-               column(width = 6,
-                      selectInput(inputId="patient_num2",
-                                  label="Select Patient Number: ",
-                                  choices=choices,
-                                  selected = 1),
-                      # get rid of the extra line between two checkboxes
-                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-                      checkboxInput("show_stackbar2","Show stacked bar charts ",FALSE),
-                      checkboxInput("show_trend2","Show the trend in line graphs",FALSE),
-                      checkboxInput("show_penc2","Show percentage",FALSE),
-                      checkboxInput("show_rslider","Show range slider",FALSE)),  # Abs encounters -> percentage
-               column(width = 6,
-                      selectInput(inputId="enco_type2",
-                                  label="Select Encounter type(s): ",
-                                  choices=unique(three_mss$Category), multiple = T,
-                                  selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(), br(), br(),
-               uiOutput("history"),
-               plotlyOutput("dat_all", height = 300),br(),
-               plotlyOutput("dat_comp", height = 300)
-      ),
-      tabPanel("Detailed MS Daily",
-               h3("Detailed MS Daily"),
-               column(width = 6,
-                      selectInput(inputId="patient_vd_num",
-                                  label="Select Patient Number: ",
-                                  choices=choices,
-                                  selected = 1)), # modify the size of the input box
-               column(width = 6,
-                      selectInput(inputId="enco_vd_type",
-                                  label="Select Encounter type(s): ",
-                                  choices=unique(three_mss$Category), multiple = T,
-                                  selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(),
-               h4("Encounters by Day"),
-               plotlyOutput("all_six", height = 650),
-               br(),
-               h4("Vitamin D Levels"),
-               checkboxInput("show_trend","Show the trend in a line graph",FALSE),
-               plotlyOutput("vitd"))
+      # tabPanel("MS Summary", id='de_tab1', tags$head(includeScript("goman.js")),
+      #          h3("MS Summary"),
+      #          column(width = 6,
+      #                 selectInput(inputId="patient_num2",
+      #                             label="Select Patient Number: ",
+      #                             choices=choices,
+      #                             selected = 1),
+      #                 # get rid of the extra line between two checkboxes
+      #                 tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+      #                 checkboxInput("show_stackbar2","Show stacked bar charts ",FALSE),
+      #                 checkboxInput("show_trend2","Show the trend in line graphs",FALSE),
+      #                 checkboxInput("show_penc2","Show percentage",FALSE),
+      #                 checkboxInput("show_rslider","Show range slider",FALSE)),  # Abs encounters -> percentage
+      #          column(width = 6,
+      #                 selectInput(inputId="enco_type2",
+      #                             label="Select Encounter type(s): ",
+      #                             choices=unique(three_mss$Category), multiple = T,
+      #                             selected = unique(three_mss$Category))),
+      #          br(), br(), br(), br(), br(), br(), br(), br(), br(),
+      #          uiOutput("history"),
+      #          plotlyOutput("dat_all", height = 300),br(),
+      #          plotlyOutput("dat_comp", height = 300)
+      # ),
+      # tabPanel("Detailed MS Daily", id='de_tab2',
+      #          h3("Detailed MS Daily"),
+      #          column(width = 6,
+      #                 selectInput(inputId="patient_vd_num",
+      #                             label="Select Patient Number: ",
+      #                             choices=choices,
+      #                             selected = 1)), # modify the size of the input box
+      #          column(width = 6,
+      #                 selectInput(inputId="enco_vd_type",
+      #                             label="Select Encounter type(s): ",
+      #                             choices=unique(three_mss$Category), multiple = T,
+      #                             selected = unique(three_mss$Category))),
+      #          br(), br(), br(), br(), br(), br(), br(),
+      #          h4("Encounters by Day"),
+      #          plotlyOutput("all_six", height = 650),
+      #          br(),
+      #          h4("Vitamin D Levels"),
+      #          checkboxInput("show_trend","Show the trend in a line graph",FALSE),
+      #          plotlyOutput("vitd"))
     ) # for tabsetPanel
     
   )) # ")" for mainPanel & fluidPage
@@ -149,24 +148,24 @@ output$pageStub <- renderUI(fluidPage(
 #############################################################
 ######## From the contents under the original `Server` session
 
-############ In `Detailed Evidence I & II` tabset
+############ In `Detailed Evidence` tabset
 # Users cannot select both show_stackbar & show_trend (line graph) concurrently
 observe({
-  
+
   if(is.null(input$show_trend1) | is.null(input$show_trend2) | is.null(input$show_stackbar) | is.null(input$show_stackbar2))  return(NULL)
-  
+
   if(input$show_trend1==TRUE) {
     shinyjs::disable("show_stackbar")
   }else{
     shinyjs::enable("show_stackbar")
   }
-  
+
   if(input$show_stackbar==TRUE) {
     shinyjs::disable("show_trend1")
   }else{
     shinyjs::enable("show_trend1")
   }
-  
+
   if(input$show_trend2==TRUE) {
     shinyjs::disable("show_stackbar2")
   }else{
@@ -195,30 +194,30 @@ observeEvent(event_data("plotly_click"), {
   # observeEvent(event_data("plotly_click", source = "dat_all"), {
   x <- event_data("plotly_click")$x
   # x <- event_data("plotly_click", source = "dat_all")$x
-  
+
   # cat('\nx...\t'); cat(x); cat('\n')
   if (!length(x)) return()
-  
+
   if (!length(drills$current_yr)) {
     drills$current_yr <- x
   } else if (!length(drills$current_month)) {
     drills$current_month <- x
   }
-  
+
 })
 
 
 output$history <- renderUI({
   if (!length(drills$current_yr)) return("Click the bar chart to drilldown")
-  
+
   id <- match(input$patient_num2, choices)
   pat_encounter <- which(three_mss$PatientNum == choices[id])
-  
+
   keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type2]
-  
+
   k <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
   all_yr <- unique(k$Year)       #categories
-  
+
   categoryInput <- selectInput(
     "yyyear", "Year",
     choices = str_sub(all_yr,1,4), selected = str_sub(drills$current_yr,1,4)
@@ -230,21 +229,21 @@ output$history <- renderUI({
              uiOutput("back"))
     ))
   }
-  
+
   sd <- filter(k, Year == drills$current_yr)
-  
+
   subCategoryInput <- selectInput(
     "mmmonth", "Month",
     choices = unique(str_sub(sd$Month,6,7)),
     selected = str_sub(drills$current_month,6,7)
   )
-  
+
   fluidRow(
     column(3, categoryInput),
     column(3, subCategoryInput),
     column(3, tags$style(HTML('#back2 {margin-top: 25px}')), uiOutput("back2"))
   )
-  
+
 })
 
 
@@ -260,7 +259,7 @@ output$back2 <- renderUI({
 })
 
 #########
-# clear the chosen category when back buttons were pressed & !!! when users select new patients 
+# clear the chosen category when back buttons were pressed & !!! when users select new patients
 # considers the change made to input$clear, input$clear2, and input$patient_num2
 observeEvent(input$clear, {
   drills$current_yr <- NULL
@@ -285,140 +284,138 @@ observeEvent(input$patient_num2, {
 # 1) when select a new patient, show the default overview.
 # 2) when change the encounter type, update the plots accordingly
 observeEvent(c(input$enco_type2,input$patient_num2),{
-  
-  # print(head(three_mss))
-  
+
   # data pre-processing shared by all
   id <- match(input$patient_num2, choices)
   pat_encounter <- which(three_mss$PatientNum == choices[id])
-  
+
   keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type2]
-  
+
   k <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
   all_yr <- unique(k$Year)       #categories
   all_month <- unique(k$Month)   #sub_categories
-  
-  
+
+
   ##########################
   # the bar chart (dat_all)
   output$dat_all <- renderPlotly({
-    
-    yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year" 
+
+    yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"
     yyear= str_sub(drills$current_yr,1,4)
     mmonth=str_sub(drills$current_month,1,7)
-    
+
     # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
     if(input$show_stackbar2 == TRUE) my_barmode='stack'   # for all three scenarios (yr/month/day)
-    
+
     if (!length(drills$current_yr)) {
-      
+
       # data-preprocessing
-      k1=count(k,Year,Category,color) 
-      k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+      k1=count(k,Year,Category,color)
+      k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4),
                                "\nCategory: ",k1$Category,
                                "\nEncounter: ",k1$n)
-      
+
       if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
         ### percent
         # k1 here corresponds to k in `Detailed Evidence` section
         # k here corresponds to select_df
         k_new = k %>% count(Year)
         k_lj=left_join(k1,k_new,by="Year")
-        k1$n = k_lj$n.x/k_lj$n.y; 
-        k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4), 
+        k1$n = k_lj$n.x/k_lj$n.y;
+        k1$Description <- paste0("Year: ",str_sub(k1$Year,1,4),
                                  "\nCategory: ",k1$Category,
                                  "\nPercentage: ",percent(k1$n))
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
       }
-      
+
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-      
+
       if(input$show_trend2 == TRUE){
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,
               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,xaxis=list(title='Year'))
         }
-        
-        
+
+
       }else{
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, 
+            layout(barmode=my_barmode,
                    annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                    yaxis=yaxi,
                    xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, 
+            layout(barmode=my_barmode,
                    annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                    yaxis=yaxi,xaxis=list(title='Year'))
         }
-        
+
       }
-      
+
       pc
-      
+
     } else if(!length(drills$current_month)){
-      
+
       # data-preprocessing
       k1 <- filter(k,Year == drills$current_yr)
-      k1=k1 %>% count(Month,Category,color) 
-      k1$Description <- paste0("Year: ",str_sub(k1$Month,1,7), 
+      k1=k1 %>% count(Month,Category,color)
+      k1$Description <- paste0("Year: ",str_sub(k1$Month,1,7),
                                "\nCategory: ",k1$Category,
                                "\nEncounter: ",k1$n)
-      
+
       if(input$show_penc2 == TRUE) {
         ### percent
         # k1 here corresponds to k in `Detailed Evidence` section
         # k here corresponds to select_df
         k_new = k %>% count(Month)
         k_lj=left_join(k1,k_new,by="Month")
-        k1$n = k_lj$n.x/k_lj$n.y; 
-        k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+        k1$n = k_lj$n.x/k_lj$n.y;
+        k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7),
                                  "\nCategory: ",k1$Category,
                                  "\nPercentage: ",percent(k1$n))
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
-      }    
-      
+      }
+
       if(length(unique(k1$Month))==1) {nr=nrow(k1); k1[nr+1,] = k1[nr,]; k1$Month[nr+1]=k1$Month[nr]+10; k1$n[nr+1]=0}
-      
+
       title=paste0("Encounters Aggregated by Month (Year: ",yyear,")")
-      
+
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-      
+
       if(input$show_trend2 == TRUE){
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Month, y = ~n, color=~color, type="scatter",mode='marker',    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,
-              xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+              xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month',
                          rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
@@ -426,12 +423,12 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Month, y = ~n, color=~color, type="scatter",mode='marker',    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,
               xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
         }
-        
+
       }else{
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k1,name =~Category, # name of the legend
@@ -439,12 +436,12 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
                         text=~Description, hoverinfo="text") %>%
             layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                    yaxis=yaxi,
-                   xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                   xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month',
                               rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~Month, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
@@ -452,13 +449,13 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
                    yaxis=yaxi,
                    xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
         }
-        
+
       }
-      
+
       pc
-      
+
     }else {     # day
-      
+
       # data-preprocessing
       k1 <- filter(k,Month == drills$current_month)
       # k <- filter(k,Year == drills$current_yr,Month == drills$current_month)
@@ -466,100 +463,100 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
       k1$Description <- paste0("Year: ",k1$StartDate,
                                "\nCategory: ",k1$Category,
                                "\nEncounter: ",k1$n)
-      
+
       if(input$show_penc2 == TRUE) {
         ### percent
         # k1 here corresponds to k in `Detailed Evidence` section
         # k here corresponds to select_df
         k_new = k %>% count(StartDate)
         k_lj=left_join(k1,k_new,by="StartDate")
-        k1$n = k_lj$n.x/k_lj$n.y; 
-        k1$Description <- paste0("Date: ",k1$StartDate, 
+        k1$n = k_lj$n.x/k_lj$n.y;
+        k1$Description <- paste0("Date: ",k1$StartDate,
                                  "\nCategory: ",k1$Category,
                                  "\nPercentage: ",percent(k1$n))
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
-      }   
-      
+      }
+
       if(length(unique(k1$StartDate))==1) {nr=nrow(k1); k1[nr+1,] = k1[nr,]; k1$StartDate[nr+1]=k1$StartDate[nr]+10; k1$n[nr+1]=0}
-      
+
       yr=str_sub(mmonth,1,4); mo=str_sub(mmonth,6,7) %>% as.numeric %>% month.abb[.]
       title=paste0("Encounters by Day (Month: ",mo,', ',yr,")")
-      
+
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-      
+
       # figure out the number of days in a month
-      thirty_one=c(1,3,5,7,8,10,12);         thirty=c(4,6,9,11); 
+      thirty_one=c(1,3,5,7,8,10,12);         thirty=c(4,6,9,11);
       if(str_sub(mmonth,6,7) %in% thirty_one) dat='-31'
       else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
       else dat='-28'
-      
+
       if(input$show_trend2 == TRUE){
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color,type="scatter", mode='marker', # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
             layout(#barmode=my_barmode, annotations=title_style ,
-              yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+              yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date',
                                      rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color,type="scatter", mode='marker', # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
             layout(#barmode=my_barmode, annotations=title_style ,
               yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
         }
-        
-        
+
+
       }else{
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
             layout(barmode=my_barmode, annotations=title_style ,
-                   yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                   yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date',
                                           rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.1, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k1,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
             layout(barmode=my_barmode, annotations=title_style ,
                    yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
         }
-        
-        
+
+
       }
-      
-      
-      
+
+
+
       pc
-    } 
-    
+    }
+
   })
-  
-  
+
+
   #########################################
   # Show comparisons between adjacent years/months/days
   output$dat_comp <- renderPlotly({
     yaxi=list(title='Encounter', visible=T); my_barmode='group' ;
     yyear= str_sub(drills$current_yr,1,4)
     mmonth=str_sub(drills$current_month,1,7)
-    
+
     # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
     if(input$show_stackbar2 == TRUE) my_barmode='stack'   # for all three scenarios (yr/month/day)
-    
+
     ########
     ###Year
     if (!length(drills$current_yr)) {
       # data-preprocessing
-      k1=count(k,Year,Category,color) 
-      
+      k1=count(k,Year,Category,color)
+
       if(input$show_penc2 == TRUE) {     #! note that it is input$show_penc2
         ### percent
         # k1 here corresponds to k in `Detailed Evidence` section
@@ -569,21 +566,21 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
         k1$n = k_lj$n.x/k_lj$n.y
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
       }
-      
+
       k = k1  # tailor for the use of comparison
-      
+
       k_before = k    # store the raw encounters in k_before before starting doing comparisons
       ########################
       # the 1) Comparison.
-      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
-      # set the corresponding type in the previous year to zero. 
+      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year,
+      # set the corresponding type in the previous year to zero.
       ### Comparison in years
-      first_else=0; k$comp=0; flag=0 
+      first_else=0; k$comp=0; flag=0
       for(i in 1:nrow(k)){
         yr_new=k$Year[i]
-        #1st if - only run in the 1st i 
-        if(i==1) {yr=k$Year[i]; info_new=c(); info=c()} 
-        
+        #1st if - only run in the 1st i
+        if(i==1) {yr=k$Year[i]; info_new=c(); info=c()}
+
         #2nd if - only run in the last i
         if(i==nrow(k)) {
           yr=k$Year[i]-1  #make it bypass the third if and go to else
@@ -593,88 +590,88 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
             info_new[k$Category[i]]=k$n[i]
           }
         }
-        
-        #3rd big if  
+
+        #3rd big if
         if(yr_new==yr) {
           if(flag==0){
             info[k$Category[i]]=k$n[i]
           }else{
             info_new[k$Category[i]]=k$n[i]
           }
-          
+
         }else { # for making comparison (& if two yrs don't match, move to store in new yrs)
           yr=k$Year[i]
           if(flag==0) {  # 0->1
             info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that year
             info=c()                          # set it to default
             info_new[k$Category[i]]=k$n[i]; flag=1  #"even" yr - info_new (flag=1)
-            
+
           }else{         # 1->0
             info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that year
             info_new=c()                      # set it to default
             info[k$Category[i]]=k$n[i]; flag=0      #"odd" yr - info (flag=0)
           }
-          
+
           if(first_else==1){  # starting from the 2nd time of unmatch of two yrs, run the following code chunk
             if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-              # not setting it to zero 
+              # not setting it to zero
               # info_even[!(names(info_even) %in% names(info_odd))]=0    #if one encounter type does not appear in the previous yr, set it to 0.
               info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                             info_even[!(names(info_even) %in% names(info_odd))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{  # account for the different scenario in the last yr
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
-              
+
               info_even=info_evenk  # undo the change made to info_even
             }else{    # [odd-even]
-              # not setting it to zero 
+              # not setting it to zero
               # info_odd[!(names(info_odd) %in% names(info_even))]=0    #if one encounter type does not appear in the previous yr, set it to 0.
               info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                             info_odd[!(names(info_odd) %in% names(info_even))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{    # account for the different scenario in the last yr
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
               info_odd=info_oddk   # undo the change made to info_odd
             }
           }# first_else
-          first_else=1   
-          
-        } # the 3rd if 
+          first_else=1
+
+        } # the 3rd if
       }  # for loop
-      
-      # assign the original values to the first recorded year 
+
+      # assign the original values to the first recorded year
       k[k$Year==k$Year[1],]$comp = k_before[k_before$Year==k$Year[1],]$n
-      
+
       # override n to comp
-      k$n=k$comp  
-      
+      k$n=k$comp
+
       ###### the 2) Comparison. Show comparison between two years/months/days
       # k stores the data after doing comparisons for two consecutively-recorded years/months/days
-      ## k_before stores the original raw encounters 
+      ## k_before stores the original raw encounters
       tot_ro=nrow(k)
       for(i in 1:tot_ro){
         yr_new=k$Year[i]
-        #1st if - only run in the 1st i 
-        if(i==1) yr=k$Year[i] 
+        #1st if - only run in the 1st i
+        if(i==1) yr=k$Year[i]
         if( (year(yr_new)-year(yr))>1 ){
           #yr+1: comp(yr+1)=0-yr
           g=k[k$Year==yr,]
-          
+
           g$Year=paste0((year(g$Year) + 1),'-01-01') %>% as.Date  #convert from character to Date
           g$n=-k_before[k_before$Year==yr,]$n
           k=rbind(k,g)  #generate new rows; need to be sorted later
-          
+
           #yr_new: comp(yr_new)=yr_new-0
           k[k$Year==yr_new,]$n=k_before[k_before$Year==yr_new,]$n
-          
+
           #other yrs [yr+2,yr_new-1] : 0
           if( (year(yr_new)-year(yr))>2){
             j=1;flag=1
@@ -687,114 +684,114 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
               # print(year(yr_new)-1); print('\n')
             }
           }
-          
+
         }
         yr=yr_new
       }
-      
+
       k = k %>% arrange(Year)   # sort the rows by year
-      
-      # k$Description ... !! 
+
+      # k$Description ... !!
       if(input$show_penc2 == TRUE) {
-        k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+        k$Description <- paste0("Year: ",str_sub(k$Year,1,4),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",percent(k$n))
       }else{
-        k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+        k$Description <- paste0("Year: ",str_sub(k$Year,1,4),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",k$n)
       }
-      
+
       # k_after <<- k
-      
+
       title='Difference on Encounters from Two Consecutively-Recorded Years'
-      
+
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-      
-      
+
+
       if(input$show_trend2 == TRUE){
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',   # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,
               xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',   # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,xaxis=list(title='Year'))
         }
-        
+
       }else{
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, 
+            layout(barmode=my_barmode,
                    annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                    yaxis=yaxi,
                    xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                               yref = "paper", align = "center",x = -0.05, y = 1.11, font=list(size=16,color='black'))
-          
+
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(barmode=my_barmode, 
+            layout(barmode=my_barmode,
                    annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                    yaxis=yaxi, xaxis=list(title='Year'))
         }
-        
+
       }
-      
+
       pc
-    } else if(!length(drills$current_month)){   
+    } else if(!length(drills$current_month)){
       ########
       ###Month
-      
+
       k1 <- filter(k,Year == drills$current_yr)
-      k1 = k1 %>% count(Month,Category,color) 
-      # k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+      k1 = k1 %>% count(Month,Category,color)
+      # k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7),
       #                          "\nCategory: ",k1$Category,
       #                          "\nDifference: ",k1$n)
-      
+
       if(input$show_penc2 == TRUE) {
         ### percent
         k_new = k %>% count(Month)
         k_lj=left_join(k1,k_new,by="Month")
-        k1$n = k_lj$n.x/k_lj$n.y; 
-        # k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7), 
+        k1$n = k_lj$n.x/k_lj$n.y;
+        # k1$Description <- paste0("Month: ",str_sub(k1$Month,1,7),
         #                          "\nCategory: ",k1$Category,
         #                          "\nDifference: ",percent(k1$n))
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
-        
-      } 
-      
+
+      }
+
       k=k1 #tailor for the use of comparison
-      
+
       k_before = k
       ########################
       # the 1) Comparison.
-      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
-      # set the corresponding type in the previous year to zero. 
+      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year,
+      # set the corresponding type in the previous year to zero.
       #################
       ##Make Comparison - Month
-      first_else=0; k$comp=0; flag=0 
+      first_else=0; k$comp=0; flag=0
       for(i in 1:nrow(k)){
         yr_new=k$Month[i]
-        #1st if - only run in the 1st i 
-        if(i==1) {yr=k$Month[i]; info_new=c(); info=c()} 
-        
+        #1st if - only run in the 1st i
+        if(i==1) {yr=k$Month[i]; info_new=c(); info=c()}
+
         #2nd if - only run in the last i
         if(i==nrow(k)) {
           yr=k$Month[i]-1  #make it bypass the third if and go to else
@@ -804,15 +801,15 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
             info_new[k$Category[i]]=k$n[i]
           }
         }
-        
-        #3rd big if  
+
+        #3rd big if
         if(yr_new==yr) {
           if(flag==0){
             info[k$Category[i]]=k$n[i]
           }else{
             info_new[k$Category[i]]=k$n[i]
           }
-          
+
         }else { # for making comparison (& if two months don't match, move to store in new yrs)
           yr=k$Month[i]
           if(flag==0) {  # 0->1
@@ -824,66 +821,66 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
             info_new=c()                      # set it to default
             info[k$Category[i]]=k$n[i]; flag=0      #"odd" month - info (flag=0)
           }
-          
+
           if(first_else==1){  # starting from the 2nd time of unmatch of two months, run the following code chunk
             if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-              # not setting it to zero 
+              # not setting it to zero
               # info_even[!(names(info_even) %in% names(info_odd))]=0 #if one encounter type does not appear in the previous month, set it to 0.
               info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                             info_even[!(names(info_even) %in% names(info_odd))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{  # account for the different scenario in the last month
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
-              
+
               info_even=info_evenk  # undo the change made to info_even
             }else{    # [odd-even]
-              # not setting it to zero 
+              # not setting it to zero
               # info_odd[!(names(info_odd) %in% names(info_even))]=0   #if one encounter type does not appear in the previous month, set it to 0.
               info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                             info_odd[!(names(info_odd) %in% names(info_even))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{    # account for the different scenario in the last month
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
               info_odd=info_oddk   # undo the change made to info_odd
             }
           } # first_else
-          first_else=1   
+          first_else=1
         } # the 3rd if
       }  # for loop
-      
-      
-      # assign the original values to the first recorded year 
+
+
+      # assign the original values to the first recorded year
       k[k$Month==k$Month[1],]$comp = k_before[k_before$Month==k$Month[1],]$n
-      
+
       k$n=k$comp  # override n to comp
-      
+
       ###### the 2) Comparison. Show comparison between two years/months/days
       # k stores the data after doing comparisons for two consecutively-recorded years/months/days
-      ## k_before stores the original raw encounters 
+      ## k_before stores the original raw encounters
       tot_ro=nrow(k)
       for(i in 1:tot_ro){
         yr_new=k$Month[i]
-        #1st if - only run in the 1st i 
-        if(i==1) yr=k$Month[i] 
+        #1st if - only run in the 1st i
+        if(i==1) yr=k$Month[i]
         if( (month(yr_new)-month(yr))>1 ){
           #yr+1: comp(yr+1)=0-yr
           g=k[k$Month==yr,]
-          
+
           g$Month=paste0(yyear,'-',(month(g$Month) + 1),'-01') %>% as.Date  #convert from character to Date
           g$n=-k_before[k_before$Month==yr,]$n
           k=rbind(k,g)  #generate new rows; need to be sorted later
-          
+
           #yr_new: comp(yr_new)=yr_new-0
           k[k$Month==yr_new,]$n=k_before[k_before$Month==yr_new,]$n
-          
+
           #other yrs [yr+2,yr_new-1] : 0
           if( (month(yr_new)-month(yr))>2){
             j=1;flag=1
@@ -894,43 +891,43 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
               j=j+1; if(month(unique(g$Month)) >= (month(yr_new)-1) ) flag=0
             }
           }
-          
+
         }
         yr=yr_new
       }
-      
+
       k = k %>% arrange(Month)   # sort the rows by year
-      
-      # k$Description ... !! 
+
+      # k$Description ... !!
       if(input$show_penc2 == TRUE) {
-        k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+        k$Description <- paste0("Month: ",str_sub(k$Month,1,7),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",percent(k$n))
       }else{
-        k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+        k$Description <- paste0("Month: ",str_sub(k$Month,1,7),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",k$n)
       }
-      
+
       # title=paste0("Encounters Aggregated by Month (Year ",yyear,")")
       title=paste0("Difference on Encounters from Two Consecutively-Recorded Months (Year: ", yyear,")")
-      
+
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-      
-      # when a year with entries only from one date, still show bars  
+
+      # when a year with entries only from one date, still show bars
       if(length(unique(k$Month))==1) {nr=nrow(k); k[nr+1,] = k[nr,]; k$Month[nr+1]=k$Month[nr]+10; k$n[nr+1]=0}
-      
-      
+
+
       if(input$show_trend2 == TRUE){
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~Month, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,
-              xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+              xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month',
                          rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
@@ -938,12 +935,12 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~Month, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
               yaxis=yaxi,
               xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
         }
-        
+
       }else{
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k,name =~Category, # name of the legend
@@ -951,7 +948,7 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
                         text=~Description, hoverinfo="text") %>%
             layout(barmode=my_barmode, annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                    yaxis=yaxi,
-                   xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+                   xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month',
                               rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))),visible=T))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
@@ -963,51 +960,51 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
                    yaxis=yaxi,
                    xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month'))
         }
-        
+
       }
-      
+
       pc
-      
+
     }else {
       ########
       ###Day in output$dat_comp
-      
+
       # data-preprocessing
       k1 <- filter(k,Month == drills$current_month)
       # k <- filter(k,Year == drills$current_yr,Month == drills$current_month)
       k1 = k1 %>% count(StartDate,Category,color)
-      
+
       # k1$Description <- paste0("Date: ",k1$StartDate,
       #                          "\nCategory: ",k1$Category,
       #                          "\nDifference: ",k1$n)
-      
+
       if(input$show_penc2 == TRUE) {
         ### percent
         k_new = k %>% count(StartDate)
         k_lj=left_join(k1,k_new,by="StartDate")
-        k1$n = k_lj$n.x/k_lj$n.y; 
-        # k1$Description <- paste0("Date: ",k1$StartDate, 
+        k1$n = k_lj$n.x/k_lj$n.y;
+        # k1$Description <- paste0("Date: ",k1$StartDate,
         #                          "\nCategory: ",k1$Category,
         #                          "\nDifference: ",percent(k1$n))
         yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
-        
-      }   
-      
+
+      }
+
       k=k1 #tailor for the use of comparison
-      
+
       k_before = k    # store the raw encounters in k_before before starting doing comparisons
       ########################
       # the 1) Comparison.
-      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
-      # set the corresponding type in the previous year to zero. 
+      # As long as there are some certain encounter types this year, then even if there is no such type in the previous year,
+      # set the corresponding type in the previous year to zero.
       ##############
       ##Make Comparison - Day
-      first_else=0; k$comp=0; flag=0 
+      first_else=0; k$comp=0; flag=0
       for(i in 1:nrow(k)){
         yr_new=k$StartDate[i]
-        #1st if - only run in the 1st i 
-        if(i==1) {yr=k$StartDate[i]; info_new=c(); info=c()} 
-        
+        #1st if - only run in the 1st i
+        if(i==1) {yr=k$StartDate[i]; info_new=c(); info=c()}
+
         #2nd if - only run in the last i
         if(i==nrow(k)) {
           yr=k$StartDate[i]-1  #make it bypass the third if and go to else
@@ -1017,87 +1014,87 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
             info_new[k$Category[i]]=k$n[i]
           }
         }
-        
-        #3rd big if  
+
+        #3rd big if
         if(yr_new==yr) {
           if(flag==0){
             info[k$Category[i]]=k$n[i]
           }else{
             info_new[k$Category[i]]=k$n[i]
           }
-          
+
         }else { # for making comparison (& if two days don't match, move to store in new days)
           yr=k$StartDate[i]
           if(flag==0) {  # 0->1
             info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that day
             info=c()                          # set it to default
             info_new[k$Category[i]]=k$n[i]; flag=1  #"even" day - info_new (flag=1)
-            
+
           }else{         # 1->0
             info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that day
             info_new=c()                      # set it to default
             info[k$Category[i]]=k$n[i]; flag=0      #"odd" day - info (flag=0)
           }
-          
+
           if(first_else==1){  # starting from the 2nd time of unmatch of two days, run the following code chunk
             if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-              # not setting it to zero 
+              # not setting it to zero
               # info_even[!(names(info_even) %in% names(info_odd))]=0  #if one encounter type does not appear in the previous day, set it to 0.
               info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                             info_even[!(names(info_even) %in% names(info_odd))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{  # account for the different scenario in the last day
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
-              
+
               info_even=info_evenk  # undo the change made to info_even
             }else{    # [odd-even]
-              # not setting it to zero 
+              # not setting it to zero
               # info_odd[!(names(info_odd) %in% names(info_even))]=0  #if one encounter type does not appear in the previous day, set it to 0.
               info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                             info_odd[!(names(info_odd) %in% names(info_even))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{    # account for the different scenario in the last day
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
               info_odd=info_oddk   # undo the change made to info_odd
             }
           } # first_else
-          first_else=1   
+          first_else=1
         } # the 3rd if
       }  # for loop
-      
-      
-      # assign the original values to the first recorded year 
+
+
+      # assign the original values to the first recorded year
       k[k$StartDate==k$StartDate[1],]$comp = k_before[k_before$StartDate==k$StartDate[1],]$n
-      
+
       k$n=k$comp  # override n to comp
-      
+
       ###### the 2) Comparison. Show comparison between two years/months/days
       # k stores the data after doing comparisons for two consecutively-recorded years/months/days
-      ## k_before stores the original raw encounters 
+      ## k_before stores the original raw encounters
       tot_ro=nrow(k)
       for(i in 1:tot_ro){
         yr_new=k$StartDate[i]
-        #1st if - only run in the 1st i 
-        if(i==1) yr=k$StartDate[i] 
+        #1st if - only run in the 1st i
+        if(i==1) yr=k$StartDate[i]
         if( (yr_new-yr)>1 ){
           #yr+1: comp(yr+1)=0-yr
           g=k[k$StartDate==yr,]
-          
+
           g$StartDate=(g$StartDate + 1) %>% as.Date  #convert from character to Date
           g$n=-k_before[k_before$StartDate==yr,]$n
           k=rbind(k,g)  #generate new rows; need to be sorted later
-          
+
           #yr_new: comp(yr_new)=yr_new-0
           k[k$StartDate==yr_new,]$n=k_before[k_before$StartDate==yr_new,]$n
-          
+
           #other yrs [yr+2,yr_new-1] : 0
           if( (yr_new-yr)>2 ){
             j=1;flag=1
@@ -1110,14 +1107,14 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
               # print(month(yr_new)-1); print('\n')
             }
           }
-          
+
         }
         yr=yr_new
       }
-      
+
       k = k %>% arrange(StartDate)   # sort the rows by year
-      
-      # k$Description ... !! 
+
+      # k$Description ... !!
       if(input$show_penc2 == TRUE) {
         k$Description <- paste0("Date: ",k$StartDate,
                                 "\nCategory: ",k$Category,
@@ -1127,33 +1124,33 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",k$n)
       }
-      
+
       # k_after <<- k
-      
+
       ### further refine plot layout
       yr=str_sub(mmonth,1,4); mo=str_sub(mmonth,6,7) %>% as.numeric %>% month.abb[.]
       title=paste0("Difference on Encounters from Two Consecutively-Recorded Days (Month: ",mo,', ',yr,")")
-      
+
       title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                           yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-      
-      # when a month with entries only from one date, still show bars  
+
+      # when a month with entries only from one date, still show bars
       if(length(unique(k$StartDate))==1) {nr=nrow(k); k[nr+1,] = k[nr,]; k$StartDate[nr+1]=k$StartDate[nr]+10; k$n[nr+1]=0}
-      
+
       # figure out the number of days in a month
-      thirty_one=c(1,3,5,7,8,10,12); thirty=c(4,6,9,11); 
+      thirty_one=c(1,3,5,7,8,10,12); thirty=c(4,6,9,11);
       if(str_sub(mmonth,6,7) %in% thirty_one) dat='-31'
       else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
       else dat='-28'
-      
+
       if(input$show_trend2 == TRUE){
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',     # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style ,
-              yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+              yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date',
                                      rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
@@ -1161,19 +1158,19 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',     # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
-            layout(#barmode=my_barmode, 
+            layout(#barmode=my_barmode,
               annotations=title_style ,
               yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
         }
-        
-        
+
+
       }else{
         if(input$show_rslider == TRUE){
           pc <- plot_ly(k,name =~Category, # name of the legend
                         x = ~StartDate, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                         text=~Description, hoverinfo="text") %>%
             layout(barmode=my_barmode, annotations=title_style ,
-                   yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+                   yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date',
                                           rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
         }else{
           title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
@@ -1184,14 +1181,14 @@ observeEvent(c(input$enco_type2,input$patient_num2),{
             layout(barmode=my_barmode, annotations=title_style ,
                    yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date'))
         }
-        
+
       }
       pc
-    } 
-    
+    }
+
   })
-  
-})  
+
+})
 
 
 ####################
@@ -1227,62 +1224,62 @@ observeEvent(event_data("plotly_click", source = "dat_month"), {
 
 # when select a new patient, only show the annual overview
 observeEvent(input$patient_num, {
-  dat_year(NULL) 
+  dat_year(NULL)
   dat_month(NULL)
   dat_daily(NULL)
 })
 
 
 observeEvent(input$enco_type,{
-  
+
   output$dat_year <- renderPlotly({
-    
+
     id <- match(input$patient_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
+
     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
-    
+
     select_df <- three_mss[pat_encounter,] %>% filter(Category %in% keep_category)
-    
+
     k <- select_df %>% count(Year,Category,color)
-    k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+    k$Description <- paste0("Year: ",str_sub(k$Year,1,4),
                             "\nCategory: ",k$Category,
                             "\nEncounter: ",k$n)
-    
+
     #Default:group bar charts & abs # of encounters
-    yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"  
-    
-    
+    yaxi=list(title='Encounter', visible=T); my_barmode='group' ;title="Encounters Aggregated by Year"
+
+
     # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
     if(input$show_stackbar == TRUE) my_barmode='stack'
     if(input$show_penc == TRUE) {
       # percent
       k1=select_df %>% count(Year)
       k_lj=left_join(k,k1,by="Year")
-      k$n = k_lj$n.x/k_lj$n.y; 
-      k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+      k$n = k_lj$n.x/k_lj$n.y;
+      k$Description <- paste0("Year: ",str_sub(k$Year,1,4),
                               "\nCategory: ",k$Category,
                               "\nPercentage: ",percent(k$n))
-      
+
       yaxi=list(title='Percentage per Year', visible=T,tickformat = "%")
     }
-    
-    
+
+
     ########################
     # the 1) Comparison.
-    # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
-    # set the corresponding type in the previous year to zero. 
+    # As long as there are some certain encounter types this year, then even if there is no such type in the previous year,
+    # set the corresponding type in the previous year to zero.
     ##Make Comparison - Year
     if(input$show_comp == TRUE){
-      
+
       k_before = k
-      
-      first_else=0; k$comp=0; flag=0 
+
+      first_else=0; k$comp=0; flag=0
       for(i in 1:nrow(k)){
         yr_new=k$Year[i]
-        #1st if - only run in the 1st i 
-        if(i==1) {yr=k$Year[i]; info_new=c(); info=c()} 
-        
+        #1st if - only run in the 1st i
+        if(i==1) {yr=k$Year[i]; info_new=c(); info=c()}
+
         #2nd if - only run in the last i
         if(i==nrow(k)) {
           yr=k$Year[i]-1  #make it bypass the third if and go to else
@@ -1292,86 +1289,86 @@ observeEvent(input$enco_type,{
             info_new[k$Category[i]]=k$n[i]
           }
         }
-        
-        #3rd big if  
+
+        #3rd big if
         if(yr_new==yr) {
           if(flag==0){
             info[k$Category[i]]=k$n[i]
           }else{
             info_new[k$Category[i]]=k$n[i]
           }
-          
+
         }else { # for making comparison (& if two yrs don't match, move to store in new yrs)
           yr=k$Year[i]
           if(flag==0) {  # 0->1
             info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that year
             info=c()                          # set it to default
             info_new[k$Category[i]]=k$n[i]; flag=1  #"even" yr - info_new (flag=1)
-            
+
           }else{         # 1->0
             info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that year
             info_new=c()                      # set it to default
             info[k$Category[i]]=k$n[i]; flag=0      #"odd" yr - info (flag=0)
           }
-          
+
           if(first_else==1){  # starting from the 2nd time of unmatch of two yrs, run the following code chunk
             if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
-              # not setting it to zero 
+              # not setting it to zero
               # info_even[!(names(info_even) %in% names(info_odd))]=0  #if one encounter type does not appear in the previous yr, set it to 0.
               info_comp = c(info_even[names(info_even) %in% names(info_odd)]-info_odd[names(info_odd) %in% names(info_even)],
                             info_even[!(names(info_even) %in% names(info_odd))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{  # account for the different scenario in the last yr
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
-              
+
               info_even=info_evenk  # undo the change made to info_even
             }else{    # [odd-even]
-              # not setting it to zero 
+              # not setting it to zero
               # info_odd[!(names(info_odd) %in% names(info_even))]=0   #if one encounter type does not appear in the previous yr, set it to 0.
               info_comp = c(info_odd[names(info_odd) %in% names(info_even)]-info_even[names(info_even) %in% names(info_odd)],
                             info_odd[!(names(info_odd) %in% names(info_even))])
               #Arrange the list in target order
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{    # account for the different scenario in the last yr
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
               info_odd=info_oddk   # undo the change made to info_odd
             }
           }# first_else
-          first_else=1   
-        } # the 3rd if 
+          first_else=1
+        } # the 3rd if
       }  # for loop
-      
-      # assign the original values to the first recorded year 
+
+      # assign the original values to the first recorded year
       k[k$Year==k$Year[1],]$comp = k_before[k_before$Year==k$Year[1],]$n
-      
+
       k$n=k$comp  # override n to comp
-      
+
       ###### the 2) Comparison. Show comparison between two years/months/days
       # k stores the data after doing comparisons for two consecutively-recorded years/months/days
-      ## k_before stores the original raw encounters 
+      ## k_before stores the original raw encounters
       tot_ro=nrow(k)
       for(i in 1:tot_ro){
         yr_new=k$Year[i]
-        #1st if - only run in the 1st i 
-        if(i==1) yr=k$Year[i] 
+        #1st if - only run in the 1st i
+        if(i==1) yr=k$Year[i]
         if( (year(yr_new)-year(yr))>1 ){
           #yr+1: comp(yr+1)=0-yr
           g=k[k$Year==yr,]
-          
+
           g$Year=paste0((year(g$Year) + 1),'-01-01') %>% as.Date  #convert from character to Date
           g$n=-k_before[k_before$Year==yr,]$n
           k=rbind(k,g)  #generate new rows; need to be sorted later
-          
+
           #yr_new: comp(yr_new)=yr_new-0
           k[k$Year==yr_new,]$n=k_before[k_before$Year==yr_new,]$n
-          
+
           #other yrs [yr+2,yr_new-1] : 0
           if( (year(yr_new)-year(yr))>2){
             j=1;flag=1
@@ -1382,63 +1379,63 @@ observeEvent(input$enco_type,{
               j=j+1; if(year(unique(g$Year)) >= (year(yr_new)-1) ) flag=0
             }
           }
-          
+
         }
         yr=yr_new
       }
-      
+
       k = k %>% arrange(Year)   # sort the rows by year
-      
+
       # k$Description ...
       # show the text when hovered over
       if(input$show_penc == TRUE){
-        k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+        k$Description <- paste0("Year: ",str_sub(k$Year,1,4),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",percent(k$n))
       }else{
-        k$Description <- paste0("Year: ",str_sub(k$Year,1,4), 
+        k$Description <- paste0("Year: ",str_sub(k$Year,1,4),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",k$n)
       }
-      
+
       title='Difference on Encounters from Two Consecutively-Recorded Years'
     }  # the comparison if
-    
-    
+
+
     title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                         yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-    
+
     sd1 <- SharedData$new(k)
-    
+
     if(input$show_trend1 == TRUE){
       pc <- sd1 %>%
         plot_ly(source = "dat_year", name =~Category, # name of the legend
                 x = ~Year, y = ~n, color=~color, type="scatter", mode='marker',    # ensure each Category has unique color
                 text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
         #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-        layout(#barmode=my_barmode, 
+        layout(#barmode=my_barmode,
           annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
           yaxis=yaxi,
-          xaxis=list(title='Year', rangeslider=list(type="date"), visible=T)) 
+          xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
     }else{
       pc <- sd1 %>%
         plot_ly(source = "dat_year", name =~Category, # name of the legend
                 x = ~Year, y = ~n, color=~color, type="bar",    # ensure each Category has unique color
                 text=~Description, hoverinfo="text") %>%  #,opacity=~opacity
         #add_bars(x = ~Year, y = ~Encounter, color=~color) %>% # ensure each Category has unique color
-        layout(barmode=my_barmode, 
+        layout(barmode=my_barmode,
                annotations=title_style,    # change the position of the title of plot_ly in r to the top left of the plot
                yaxis=yaxi,
                xaxis=list(title='Year', rangeslider=list(type="date"), visible=T))
-      
+
     }
-    
-    
+
+
     if (is.null(dat_year())) {
       pic_year <<- pc
-      return(pic_year) 
-    } 
-    pc 
+      return(pic_year)
+    }
+    pc
     # bscols(
     #   widths=c(3,NA),
     #   list(
@@ -1446,62 +1443,62 @@ observeEvent(input$enco_type,{
     #   ),
     #   pc)
   })
-  
+
   output$dat_month <- renderPlotly({
     if (is.null(dat_year())) return(NULL)
-    
+
     id <- match(input$patient_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
+
     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
-    
-    sd <- three_mss[pat_encounter,] %>% 
+
+    sd <- three_mss[pat_encounter,] %>%
       filter(Year == dat_year(), Category %in% keep_category)
-    
+
     yyear <- sd$Year[1] %>% substr(1, 4)   # which year is clicked
     # sd2 <- SharedData$new(sd)
-    
+
     k <- sd %>% count(Month,Category,color)
-    
-    k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+
+    k$Description <- paste0("Month: ",str_sub(k$Month,1,7),
                             "\nCategory: ",k$Category,
                             "\nEncounter: ",k$n)
-    
-    
+
+
     #Default:group bar charts & abs # of encounters
     yaxi=list(title='Encounter', visible=T); my_barmode='group'; title=paste0("Encounters Aggregated by Month (Year ", yyear,")")
-    
-    
+
+
     # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
     if(input$show_stackbar == TRUE) my_barmode='stack'
     if(input$show_penc == TRUE) {
       # percent
       k1= sd %>% count(Month)
       k_lj=left_join(k,k1,by="Month")
-      k$n = k_lj$n.x/k_lj$n.y; 
-      k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+      k$n = k_lj$n.x/k_lj$n.y;
+      k$Description <- paste0("Month: ",str_sub(k$Month,1,7),
                               "\nCategory: ",k$Category,
                               "\nPercentage: ",percent(k$n))
-      
+
       yaxi=list(title='Percentage per Month', visible=T,tickformat = "%")
-      
+
     }
-    
+
     k_before = k   # store the raw encounters in k_before before starting doing comparisons
     ########################
     # the 1) Comparison.
-    # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
-    # set the corresponding type in the previous year to zero. 
-    
+    # As long as there are some certain encounter types this year, then even if there is no such type in the previous year,
+    # set the corresponding type in the previous year to zero.
+
     ##Make Comparison - month
     if(input$show_comp == TRUE){
-      
-      first_else=0; k$comp=0; flag=0 
+
+      first_else=0; k$comp=0; flag=0
       for(i in 1:nrow(k)){
         yr_new=k$Month[i]
-        #1st if - only run in the 1st i 
-        if(i==1) {yr=k$Month[i]; info_new=c(); info=c()} 
-        
+        #1st if - only run in the 1st i
+        if(i==1) {yr=k$Month[i]; info_new=c(); info=c()}
+
         #2nd if - only run in the last i
         if(i==nrow(k)) {
           yr=k$Month[i]-1  #make it bypass the third if and go to else
@@ -1511,28 +1508,28 @@ observeEvent(input$enco_type,{
             info_new[k$Category[i]]=k$n[i]
           }
         }
-        
-        #3rd big if  
+
+        #3rd big if
         if(yr_new==yr) {
           if(flag==0){
             info[k$Category[i]]=k$n[i]
           }else{
             info_new[k$Category[i]]=k$n[i]
           }
-          
+
         }else { # for making comparison (& if two months don't match, move to store in new yrs)
           yr=k$Month[i]
           if(flag==0) {  # 0->1
             info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that month
             info=c()                          # set it to default
             info_new[k$Category[i]]=k$n[i]; flag=1  #"even" month - info_new (flag=1)
-            
+
           }else{         # 1->0
             info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that month
             info_new=c()                      # set it to default
             info[k$Category[i]]=k$n[i]; flag=0      #"odd" month - info (flag=0)
           }
-          
+
           if(first_else==1){  # starting from the 2nd time of unmatch of two months, run the following code chunk
             if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
               # info_even[!(names(info_even) %in% names(info_odd))]=0
@@ -1542,11 +1539,11 @@ observeEvent(input$enco_type,{
               # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{  # account for the different scenario in the last month
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
-              
+
               info_even=info_evenk  # undo the change made to info_even
             }else{    # [odd-even]
               # info_odd[!(names(info_odd) %in% names(info_even))]=0
@@ -1556,41 +1553,41 @@ observeEvent(input$enco_type,{
               # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{    # account for the different scenario in the last month
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
               info_odd=info_oddk   # undo the change made to info_odd
             }
           }
-          first_else=1   
-        } # a big else 
+          first_else=1
+        } # a big else
       }  # for loop
-      
-      # assign the original values to the first recorded year 
+
+      # assign the original values to the first recorded year
       k[k$Month==k$Month[1],]$comp = k_before[k_before$Month==k$Month[1],]$n
-      
+
       k$n=k$comp  # override n to comp
-      
+
       ###### the 2) Comparison. Show comparison between two years/months/days
       # k stores the data after doing comparisons for two consecutively-recorded years/months/days
-      ## k_before stores the original raw encounters 
+      ## k_before stores the original raw encounters
       tot_ro=nrow(k)
       for(i in 1:tot_ro){
         yr_new=k$Month[i]
-        #1st if - only run in the 1st i 
-        if(i==1) yr=k$Month[i] 
+        #1st if - only run in the 1st i
+        if(i==1) yr=k$Month[i]
         if( (month(yr_new)-month(yr))>1 ){
           #yr+1: comp(yr+1)=0-yr
           g=k[k$Month==yr,]
-          
+
           g$Month=paste0(yyear,'-',(month(g$Month) + 1),'-01') %>% as.Date  #convert from character to Date
           g$n=-k_before[k_before$Month==yr,]$n
           k=rbind(k,g)  #generate new rows; need to be sorted later
-          
+
           #yr_new: comp(yr_new)=yr_new-0
           k[k$Month==yr_new,]$n=k_before[k_before$Month==yr_new,]$n
-          
+
           #other yrs [yr+2,yr_new-1] : 0
           if( (month(yr_new)-month(yr))>2){
             j=1;flag=1
@@ -1601,121 +1598,121 @@ observeEvent(input$enco_type,{
               j=j+1; if(month(unique(g$Month)) >= (month(yr_new)-1) ) flag=0
             }
           }
-          
+
         }
         yr=yr_new
       }
-      
+
       k = k %>% arrange(Month)   # sort the rows by year
-      
+
       # show the text when hovered over
       if(input$show_penc == TRUE){
-        k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+        k$Description <- paste0("Month: ",str_sub(k$Month,1,7),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",percent(k$n))
       }else{
-        k$Description <- paste0("Month: ",str_sub(k$Month,1,7), 
+        k$Description <- paste0("Month: ",str_sub(k$Month,1,7),
                                 "\nCategory: ",k$Category,
                                 "\nDifference: ",k$n)
       }
       title=paste0("Difference on Encounters from Two Consecutively-Recorded Months (Year ", yyear,")")
-      
+
     }  # the input if
     ## The end of the comparison
-    
+
     title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                         yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-    
-    # when a year with entries only from one date, still show bars  
+
+    # when a year with entries only from one date, still show bars
     if(length(unique(k$Month))==1) {nr=nrow(k); k[nr+1,] = k[nr,]; k$Month[nr+1]=k$Month[nr]+10; k$n[nr+1]=0}
-    
+
     sd2 <- SharedData$new(k)
-    
+
     if(input$show_trend1 == TRUE){
       pc <- sd2 %>%
         plot_ly(source = "dat_month", name =~Category,  type="scatter", mode='marker',
-                x = ~Month, y = ~n, color=~color, 
-                text=~Description, hoverinfo="text") %>% 
-        layout(#barmode=my_barmode, 
+                x = ~Month, y = ~n, color=~color,
+                text=~Description, hoverinfo="text") %>%
+        layout(#barmode=my_barmode,
           annotations=title_style,
-          yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+          yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month',
                                  rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))), visible=T))
-      
+
     }else{
       pc <- sd2 %>%
         plot_ly(source = "dat_month", name =~Category, type='bar',
-                x = ~Month, y = ~n, color=~color, 
-                text=~Description, hoverinfo="text") %>% 
+                x = ~Month, y = ~n, color=~color,
+                text=~Description, hoverinfo="text") %>%
         layout(barmode=my_barmode, annotations=title_style,
-               yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month', 
+               yaxis=yaxi, xaxis=list(range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31")),title='Month',
                                       rangeslider=list(type="date",range=c(paste0(yyear,"-01-01"),paste0(yyear,"-12-31"))), visible=T))
-      
+
     }
-    
+
     if (is.null(dat_month())) {
       pic_month <<- pc
       return(pic_month)
     }
     pc
-    
+
   })
-  
+
   output$dat_daily <- renderPlotly({
     if (is.null(dat_month())) return(NULL)
-    
+
     id <- match(input$patient_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
+
     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_type]
-    
-    sd <- three_mss[pat_encounter,] %>% 
+
+    sd <- three_mss[pat_encounter,] %>%
       filter(Month == dat_month(), Category %in% keep_category)
     mmonth <- sd$Month[1] %>% substr(1, 7)
     # sd3 <- SharedData$new(sd)
-    
+
     k <- sd %>% count(StartDate,Category,color)
-    k$Description <- paste0("Date: ",k$StartDate, 
+    k$Description <- paste0("Date: ",k$StartDate,
                             "\nCategory: ",k$Category,
                             "\nEncounter: ",k$n)
-    
+
     #Default:group bar charts & abs # of encounters
-    yaxi=list(title='Encounter', visible=T); my_barmode='group'; 
+    yaxi=list(title='Encounter', visible=T); my_barmode='group';
     yr=str_sub(mmonth,1,4); mo=str_sub(mmonth,6,7) %>% as.numeric %>% month.abb[.]
     title=paste0("Encounters by Day (Month: ",mo,', ',yr,")")
     # title=paste0("Encounters by Day (Month ", mmonth,")")
-    
-    
+
+
     # consider 8 (2*2*2) different scenarios: stacked/grouped bars; percentage/raw encounters; show comparison or not
     if(input$show_stackbar == TRUE) my_barmode='stack'
     if(input$show_penc == TRUE) {
       # percent
       k1= sd %>% count(StartDate)
       k_lj=left_join(k,k1,by="StartDate")
-      k$n = k_lj$n.x/k_lj$n.y; 
-      k$Description <- paste0("Date: ",k$StartDate, 
+      k$n = k_lj$n.x/k_lj$n.y;
+      k$Description <- paste0("Date: ",k$StartDate,
                               "\nCategory: ",k$Category,
                               "\nPercentage: ",percent(k$n))
-      
+
       yaxi=list(title='Percentage per Day', visible=T,tickformat = "%")
     }
-    
-    
+
+
     ########################
     # the 1) Comparison.
-    # As long as there are some certain encounter types this year, then even if there is no such type in the previous year, 
-    # set the corresponding type in the previous year to zero. 
+    # As long as there are some certain encounter types this year, then even if there is no such type in the previous year,
+    # set the corresponding type in the previous year to zero.
     ##############
     ##Make Comparison - Day
     if(input$show_comp == TRUE){
-      
+
       k_before = k    # store the raw encounters in k_before before starting doing comparisons
-      
-      first_else=0; k$comp=0; flag=0 
+
+      first_else=0; k$comp=0; flag=0
       for(i in 1:nrow(k)){
         yr_new=k$StartDate[i]
-        #1st if - only run in the 1st i 
-        if(i==1) {yr=k$StartDate[i]; info_new=c(); info=c()} 
-        
+        #1st if - only run in the 1st i
+        if(i==1) {yr=k$StartDate[i]; info_new=c(); info=c()}
+
         #2nd if - only run in the last i
         if(i==nrow(k)) {
           yr=k$StartDate[i]-1  #make it bypass the third if and go to else
@@ -1725,28 +1722,28 @@ observeEvent(input$enco_type,{
             info_new[k$Category[i]]=k$n[i]
           }
         }
-        
-        #3rd big if  
+
+        #3rd big if
         if(yr_new==yr) {
           if(flag==0){
             info[k$Category[i]]=k$n[i]
           }else{
             info_new[k$Category[i]]=k$n[i]
           }
-          
+
         }else { # for making comparison (& if two days don't match, move to store in new days)
           yr=k$StartDate[i]
           if(flag==0) {  # 0->1
             info_odd=info; info_oddk=info     #as flag=0 finishes storing entries for that day
             info=c()                          # set it to default
             info_new[k$Category[i]]=k$n[i]; flag=1  #"even" day - info_new (flag=1)
-            
+
           }else{         # 1->0
             info_even=info_new; info_evenk=info_new     #as flag=1 finishes storing entries for that day
             info_new=c()                      # set it to default
             info[k$Category[i]]=k$n[i]; flag=0      #"odd" day - info (flag=0)
           }
-          
+
           if(first_else==1){  # starting from the 2nd time of unmatch of two days, run the following code chunk
             if(flag==0){   #actually is flag==1 as it is set to 0 right above; [even-odd]
               # info_even[!(names(info_even) %in% names(info_odd))]=0
@@ -1756,11 +1753,11 @@ observeEvent(input$enco_type,{
               # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
               tmp=info_comp[sort(names(info_comp))]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{  # account for the different scenario in the last day
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
-              
+
               info_even=info_evenk  # undo the change made to info_even
             }else{    # [odd-even]
               # info_odd[!(names(info_odd) %in% names(info_even))]=0
@@ -1769,41 +1766,41 @@ observeEvent(input$enco_type,{
               #Arrange the list in target order
               # tmp=info_comp[match(target,names(info_comp))]; tmp=tmp[!is.na(tmp)]
               if(i!=nrow(k)){
-                k$comp[(i-length(info_comp)):(i-1)]=tmp  
+                k$comp[(i-length(info_comp)):(i-1)]=tmp
               }else{    # account for the different scenario in the last day
-                k$comp[(i-length(info_comp)+1):i]=tmp  
+                k$comp[(i-length(info_comp)+1):i]=tmp
               }
               info_odd=info_oddk   # undo the change made to info_odd
             }
           }  # first_else=0
-          first_else=1   
+          first_else=1
         } # the 3rd if
       }  # for loop
-      
-      # assign the original values to the first recorded year 
+
+      # assign the original values to the first recorded year
       k[k$StartDate==k$StartDate[1],]$comp = k_before[k_before$StartDate==k$StartDate[1],]$n
-      
+
       k$n=k$comp  # override n to comp
-      
+
       ###### the 2) Comparison. Show comparison between two years/months/days
       # k stores the data after doing comparisons for two consecutively-recorded years/months/days
-      ## k_before stores the original raw encounters 
+      ## k_before stores the original raw encounters
       tot_ro=nrow(k)
       for(i in 1:tot_ro){
         yr_new=k$StartDate[i]
-        #1st if - only run in the 1st i 
-        if(i==1) yr=k$StartDate[i] 
+        #1st if - only run in the 1st i
+        if(i==1) yr=k$StartDate[i]
         if( (yr_new-yr)>1 ){
           #yr+1: comp(yr+1)=0-yr
           g=k[k$StartDate==yr,]
-          
+
           g$StartDate=(g$StartDate + 1) %>% as.Date  #convert from character to Date
           g$n=-k_before[k_before$StartDate==yr,]$n
           k=rbind(k,g)  #generate new rows; need to be sorted later
-          
+
           #yr_new: comp(yr_new)=yr_new-0
           k[k$StartDate==yr_new,]$n=k_before[k_before$StartDate==yr_new,]$n
-          
+
           #other yrs [yr+2,yr_new-1] : 0
           if( (yr_new-yr)>2 ){
             j=1;flag=1
@@ -1814,14 +1811,14 @@ observeEvent(input$enco_type,{
               j=j+1; if(unique(g$StartDate) >= (yr_new-1) ) flag=0
             }
           }
-          
+
         }
         yr=yr_new
       }
-      
+
       k = k %>% arrange(StartDate)   # sort the rows by year
-      
-      # k$Description ... !! 
+
+      # k$Description ... !!
       # show the text when hovered over
       if(input$show_penc == TRUE){
         k$Description <- paste0("Date: ",k$StartDate,
@@ -1833,54 +1830,54 @@ observeEvent(input$enco_type,{
                                 "\nDifference: ",k$n)
       }
       title=paste0("Difference on Encounters from Two Consecutively-Recorded Days (Month ", mmonth,")")
-      
+
     }  # the input if
     ## The end of the comparison
-    
+
     title_style <- list(text=title,xanchor="left", yanchor="top",showarrow=F,xref = "paper",
                         yref = "paper", align = "center",x = -0.05, y = 1.15, font=list(size=16,color='black'))
-    
-    
-    # when a month with entries only from one date, still show bars  
+
+
+    # when a month with entries only from one date, still show bars
     if(length(unique(k$StartDate))==1) {nr=nrow(k); k[nr+1,] = k[nr,]; k$StartDate[nr+1]=k$StartDate[nr]+10; k$n[nr+1]=0}
-    
+
     sd3 <- SharedData$new(k)
-    
+
     # figure out the number of days in a month
-    thirty_one=c(1,3,5,7,8,10,12); thirty=c(4,6,9,11); 
+    thirty_one=c(1,3,5,7,8,10,12); thirty=c(4,6,9,11);
     if(str_sub(mmonth,6,7) %in% thirty_one) dat='-31'
     else if(str_sub(mmonth,6,7) %in% thirty) dat='-30'
     else dat='-28'
-    
+
     if(input$show_trend1 == TRUE){
       pc <- sd3 %>%
         plot_ly(source = "dat_daily", name =~Category,
                 x = ~StartDate, y = ~n, color=~color, type="scatter", mode='marker',
-                text=~Description, hoverinfo="text") %>% 
-        layout(#barmode=my_barmode, 
+                text=~Description, hoverinfo="text") %>%
+        layout(#barmode=my_barmode,
           annotations=title_style,
-          yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+          yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date',
                                  rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
-      
+
     }else{
       pc <- sd3 %>%
         plot_ly(source = "dat_daily", name =~Category,
                 x = ~StartDate, y = ~n, color=~color, type="bar",
-                text=~Description, hoverinfo="text") %>% 
+                text=~Description, hoverinfo="text") %>%
         layout(barmode=my_barmode, annotations=title_style ,
-               yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date', 
+               yaxis=yaxi, xaxis=list(range=c(paste0(mmonth,"-01"),paste0(mmonth,dat)),title='Date',
                                       rangeslider=list(type="date",range=c(paste0(mmonth,"-01"),paste0(mmonth,dat))), visible=TRUE))
-      
+
     }
-    
+
     if (is.null(dat_daily())) {
       pic_daily <<- pc
       return(pic_daily)
     }
     pc
   })
-  
-}) 
+
+})
 
 
 ###############
@@ -2155,15 +2152,132 @@ output$panel <- DT::renderDT({
     names(subman_df)[c(1,3,4)] <- c("PheWAS Group","Phenotype [Phecodes]","Map Probability")
   }
   
-  
   # Sort the table first by MAP probabilities then by category (only showing the “Yes” phenotypes)
-  datatable(subman_df %>% arrange(desc(`Map Probability`),cl),
-            options = list(pageLength = 20)) %>%    # each time shows only 20 rows in the output table
+  table_df <- subman_df %>% arrange(desc(`Map Probability`),cl) %>%
+                      mutate(Details = paste('<a class="go-man"><i class="fa fa-crosshairs"></i></a>', sep=""))
+  
+  action <- DT::dataTableAjax(session, table_df)
+  
+  datatable(table_df,
+            options = list(pageLength = 20,ajax = list(url = action)),escape = FALSE,
+            callback = JS("table.on('click.dt', 'td', function() {
+                           Shiny.onInputChange('click', Math.random());
+    });")) %>%    # each time shows only 20 rows in the output table
     formatStyle('cl',
                 backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
+ 
+   
+  # datatable(subman_df %>% arrange(desc(`Map Probability`),cl),
+  #           options = list(pageLength = 20),
+  #           callback = JS("table.on('click.dt', 'td', function() {
+  #                           Shiny.onInputChange('click', Math.random());
+  # });")) %>%    # each time shows only 20 rows in the output table
+  #   formatStyle('cl',
+  #               backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
   
+
+})
+
+
+## When users click on the icon of the datatable, generate two new tabPanels & then direct to one of the new tabPanels
+first_click <- FALSE
+
+observeEvent(input$click,{
+  updateTabsetPanel(session, "nav",selected = 'de_tab1')
+})
+
+observe({
+  if(!is.null(input$click) & first_click==F){
+    first_click <<- T
+    appendTab(inputId = "nav",
+      tabPanel("MS Summary", value='de_tab1', 
+               h3("MS Summary"),
+               column(width = 6,
+                      selectInput(inputId="patient_num2",
+                                  label="Select Patient Number: ",
+                                  choices=choices,
+                                  selected = 1),
+                      # get rid of the extra line between two checkboxes
+                      tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+                      checkboxInput("show_stackbar2","Show stacked bar charts ",FALSE),
+                      checkboxInput("show_trend2","Show the trend in line graphs",FALSE),
+                      checkboxInput("show_penc2","Show percentage",FALSE),
+                      checkboxInput("show_rslider","Show range slider",FALSE)),  # Abs encounters -> percentage
+               column(width = 6,
+                      selectInput(inputId="enco_type2",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(), br(), br(),
+               uiOutput("history"),
+               plotlyOutput("dat_all", height = 300),br(),
+               plotlyOutput("dat_comp", height = 300)
+      ))
+    appendTab(inputId = "nav",
+      tabPanel("Detailed MS Daily", value='de_tab2',
+               h3("Detailed MS Daily"),
+               column(width = 6,
+                      selectInput(inputId="patient_vd_num",
+                                  label="Select Patient Number: ",
+                                  choices=choices,
+                                  selected = 1)), # modify the size of the input box
+               column(width = 6,
+                      selectInput(inputId="enco_vd_type",
+                                  label="Select Encounter type(s): ",
+                                  choices=unique(three_mss$Category), multiple = T,
+                                  selected = unique(three_mss$Category))),
+               br(), br(), br(), br(), br(), br(), br(),
+               h4("Encounters by Day"),
+               plotlyOutput("all_six", height = 650),
+               br(),
+               h4("Vitamin D Levels"),
+               checkboxInput("show_trend","Show the trend in a line graph",FALSE),
+               plotlyOutput("vitd")) ) #appendTab
+    
+
+    
+  }
   
 })
+
+
+### Enable pop-up window
+# plotModal <- function() {
+#   modalDialog(
+#     h3("MS Data Overview"),
+#     column(width = 6,
+#            selectInput(inputId="patient_num",
+#                        label="Select Patient Number: ",
+#                        choices=choices,
+#                        selected = 1),
+#            # get rid of the extra line between two checkboxes
+#            tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
+#            checkboxInput("show_stackbar","Show stacked bar charts ",FALSE),
+#            checkboxInput("show_trend1","Show the trend in line graphs",FALSE),
+#            checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
+#            checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)),
+#     column(width = 6,
+#            selectInput(inputId="enco_type",
+#                        label="Select Encounter type(s): ",
+#                        choices=unique(three_mss$Category), multiple = T,
+#                        selected = unique(three_mss$Category))),
+#     br(), br(), br(), br(), br(), br(), br(), br(),br(),
+#     plotlyOutput("dat_year", height = 300),
+#     br(),
+#     plotlyOutput("dat_month", height = 300),
+#     br(),
+#     plotlyOutput("dat_daily", height = 300),
+#     size = "l",
+#     easyClose = T # the modal dialog can be dismissed by clicking outside the dialog box, or be pressing the Escape key
+#   )
+# }
+# 
+# observeEvent(input$click, {
+#   removeModal()
+#   showModal(plotModal())
+# })
+
+
 
 ##############
 # Word Cloud  - only show what's selected in the Manhattan plot;
@@ -2263,58 +2377,58 @@ observeEvent(input$individual_id, {
 # For VD tabset
 ###############
 output$vitd <- renderPlotly({
-  
+
   # cat('inside vitd...\n'); print(head(three_ms_vd))
-  
+
   id <- match(input$patient_vd_num, choices)
   pat_encounter <- which(three_ms_vd$PatientNum == choices[id])
-  
+
   sd1 <- SharedData$new(three_ms_vd[pat_encounter,])
-  
+
   # Prepare: add vertical lines under each marker
   line_list <- list()
-  for(i in 1:nrow(three_ms_vd[pat_encounter,])){ 
+  for(i in 1:nrow(three_ms_vd[pat_encounter,])){
     line_color <- "#FC8D62"
-    line_list[[i]] <- 
+    line_list[[i]] <-
       list(type      = "line",
            fillcolor = line_color,
            line      = list(color = line_color),
            opacity   = 0.5,
            x0        = three_ms_vd[pat_encounter,]$StartDate[i],
            x1        = three_ms_vd[pat_encounter,]$StartDate[i],
-           y0        = 0, 
+           y0        = 0,
            y1        = three_ms_vd[pat_encounter,]$Value[i])
-    
+
   }
-  
+
   if(input$show_trend == TRUE){
     pc <- sd1 %>%
       plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
-              type="scatter", mode='markers', 
-              text=~description, hoverinfo="text") %>%  
+              type="scatter", mode='markers',
+              text=~description, hoverinfo="text") %>%
       add_lines(x = ~StartDate, y = ~Value, name = "hv",colors="#FC8D62",alpha=0.4) %>%
       hide_legend() %>%
-      layout(yaxis=list(title='Vitamin D values', visible=T,rangemode = "tozero"), 
+      layout(yaxis=list(title='Vitamin D values', visible=T,rangemode = "tozero"),
              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T,zeroline=T,showline=T))
   }else{
     pc <- sd1 %>%
       plot_ly(x = ~StartDate, y = ~Value, colors="#FC8D62",color="#FC8D62", #fix the `requested palette with 3 different levels` issue.
-              type="scatter", mode="markers",   
-              text=~description, hoverinfo="text") %>%  
+              type="scatter", mode="markers",
+              text=~description, hoverinfo="text") %>%
       hide_legend() %>%
-      layout(yaxis=list(title='Vitamin D values', visible=T), 
+      layout(yaxis=list(title='Vitamin D values', visible=T),
              xaxis=list(title='Year', rangeslider=list(type="date"), visible=T) ,
              shapes=line_list)  # add vertical lines under each marker
   }
-  pc 
-  
+  pc
+
 })
 
 
 ### The six subplots
 observeEvent(input$enco_vd_type,{
   output$all_six <- renderPlotly({
-    
+
     ay <- list(               # set up for the yaxis
       autotick = FALSE,
       ticks = "outside",
@@ -2325,13 +2439,13 @@ observeEvent(input$enco_vd_type,{
       tickcolor = toRGB("grey") #,
       #title='Encounters', visible=T
     )
-    
+
     id <- match(input$patient_vd_num, choices)
     pat_encounter <- which(three_mss$PatientNum == choices[id])
-    
+
     keep_category <- unique(three_mss$Category)[unique(three_mss$Category) %in% input$enco_vd_type]
-    
-    panel <- . %>% 
+
+    panel <- . %>%
       plot_ly(name=~Category,  # set the name of the legend
               x = ~StartDate, y = ~Encounter, color=~color,
               text=~Description, hoverinfo="text") %>%
@@ -2347,7 +2461,7 @@ observeEvent(input$enco_vd_type,{
                x0 = 0,
                x1 = 1,
                xref = "paper",
-               y0 = 0, 
+               y0 = 0,
                y1 = 16,
                yanchor = 1,
                yref = "paper",
@@ -2357,7 +2471,7 @@ observeEvent(input$enco_vd_type,{
              )) %>%  #add rangeslider
       add_annotations(                ## format subtitles
         text = ~unique(Category),
-        x = 0, #0.5,
+        x = 0, #0.5,     #move subtitles to the very left of the plots
         y = 1,
         yref = "paper",
         xref = "paper",
@@ -2365,14 +2479,14 @@ observeEvent(input$enco_vd_type,{
         showarrow = FALSE,
         font = list(size = 12)
       )
-    
-    pc <- three_mss[pat_encounter,] %>%      
+
+    pc <- three_mss[pat_encounter,] %>%
       filter(Category %in% keep_category) %>%
       group_by(Category) %>%
       do(p = panel(.)) %>%
       subplot(nrows = NROW(.), shareX = T,margin = 0.04,heights = c(0.15,0.175,0.175,0.175,0.175,0.15)) # so that heights looks evenly for all subplots when visualized
-    
+
     pc
   })
-  
+
 })
