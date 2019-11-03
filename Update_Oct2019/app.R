@@ -297,22 +297,12 @@ server <- function(input, output, session) {
   
   ############################################################################
   # build menu; only show all pages after users finish uploading all the files
-  ## This the default page; In order to enable data uploading along the way, don't put the codes inside observe({})
+  ## This the default page; 
+  ## !!! In order to enable data uploading along the way, don't put the codes inside observe({})
   fname = "home.R"
   cat(paste0("Session filename: ", fname, ".\n"))      # print the URL for this session
   source(fname, local=TRUE)                            # load and run server code for this page
-  
-  # output$uiStub <- renderUI(tagList(             # a single-output stub ui basically lets you
-  #   fluidPage(                                  #     move the ui into the server function
-  #     fluidRow(
-  #       column(12,
-  #              HTML("<h2><a href='?home'>Home</a>","</h2>")
-  #       )
-  #     ),
-  #     uiOutput("pageStub")                     # loaded server code should render the rest of the page to this output$
-  #   )
-  # ))
-  
+
   output$uiStub <- renderUI(tagList(             # a single-output stub ui basically lets you
     dashboardPage(
       dashboardHeader( 
