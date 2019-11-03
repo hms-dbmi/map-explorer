@@ -1,6 +1,6 @@
 
 ##############################
-# load the data from Cap_app.R
+# load the data from app.R
 df <- df11
 vis_df_all <- vis_df_all11
 groupinfo_df <- groupinfo_df11
@@ -2166,20 +2166,12 @@ output$panel <- DT::renderDT({
     formatStyle('cl',
                 backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
  
-   
-  # datatable(subman_df %>% arrange(desc(`Map Probability`),cl),
-  #           options = list(pageLength = 20),
-  #           callback = JS("table.on('click.dt', 'td', function() {
-  #                           Shiny.onInputChange('click', Math.random());
-  # });")) %>%    # each time shows only 20 rows in the output table
-  #   formatStyle('cl',
-  #               backgroundColor = styleEqual(c(1:15,17:18), colvis_rgb))
-  
-
 })
 
-
-## When users click on the icon of the datatable, generate two new tabPanels & then direct to one of the new tabPanels
+## !
+## Navigate from overview to details: 
+## When users click on the icon of the datatable on Overview level, 
+## Generate (activate) two new tabPanels & then automatically direct users to one of the new tabPanels that show detailed supporting evidence.
 first_click <- FALSE
 
 observeEvent(input$click,{
@@ -2187,6 +2179,7 @@ observeEvent(input$click,{
 })
 
 observe({
+  print(input$click)
   if(!is.null(input$click) & first_click==F){
     first_click <<- T
     appendTab(inputId = "nav",
