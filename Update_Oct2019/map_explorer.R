@@ -10,6 +10,7 @@ three_mss <- three_mss11
 
 vis_df = vis_df_all[1:(nrow(vis_df_all)/(ncol(df)-2)),]
 
+
 # check whether loaded successfully
 # cat('inside map...\n'); print(head(ratio_df))
 
@@ -32,22 +33,21 @@ output$pageStub <- renderUI(fluidPage(
     plotlyOutput("bar"),
     
     h3("How to use"),
-    p("The default visualization shows the results for Patient 1.
-      You can also select any Patient ID from the dropdown list.
-      Then it would output a barchart showing the information of the proportion of the phecodes above threshold in each PheWAS group of this individual patient.
-      It would also output a Manhattan plot showing the MAP probabilities of each phecodes of this selected patient.
-      You can hover over the points in Manhattan plot or Barchart to get more information.
-      Enjoy playing around with it!")
+    p("This web application displays summarized EHR information on the overview level by default. There are different visualizations such as the Manhattan plot, table, bar charts, and word cloud, which are all linked together. 
+       The default visualization will show the results for the first patient in your data cohort. Users can select any patient ID from the dropdown list.
+       For disease of your interest, you can click on the icon appeared in each row of the data table to navigate to a new page with patient details in supporting evidence such as 
+       different lab measurement.")
   ),
   mainPanel(
     useShinyjs(),
-    tabsetPanel(id='nav',
+    tabsetPanel(id='nav',             
       tabPanel("Overview: Plot", 
                h3("MAP Manhattan Plot"),
                fluidRow(
                  plotlyOutput("plot",height = 500))
       ),
       tabPanel("Overview: Table",  #tags$head(includeScript("goman.js")),
+               br(),
                textOutput("sig_tab"),
                br(),
                textOutput("cond_num"),     #report number of phecodes above threshold
@@ -70,31 +70,15 @@ output$pageStub <- renderUI(fluidPage(
                deliverChart(div_id = "wordcloud")
                
       ) #,
-      # tabPanel("Detailed Evidence",
-      #          h3("MS Data Overview"),
-      #          column(width = 6,
-      #                 selectInput(inputId="patient_num",
-      #                             label="Select Patient Number: ",
-      #                             choices=choices,
-      #                             selected = 1),
-      #                 # get rid of the extra line between two checkboxes
-      #                 tags$style(".shiny-input-container {margin-bottom: 0px} .checkbox { margin-top: 0px; margin-bottom: 0px }"),
-      #                 checkboxInput("show_stackbar","Show stacked bar charts ",FALSE),
-      #                 checkboxInput("show_trend1","Show the trend in line graphs",FALSE),
-      #                 checkboxInput("show_penc","Show percentage",FALSE),  # Abs encounters -> percentage
-      #                 checkboxInput("show_comp","Show comparisons between adjacent years",FALSE)),
-      #          column(width = 6,
-      #                 selectInput(inputId="enco_type",
-      #                             label="Select Encounter type(s): ",
-      #                             choices=unique(three_mss$Category), multiple = T,
-      #                             selected = unique(three_mss$Category))),
-      #          br(), br(), br(), br(), br(), br(), br(), br(),br(),
-      #          plotlyOutput("dat_year", height = 300),
-      #          br(),
-      #          plotlyOutput("dat_month", height = 300),
-      #          br(),
-      #          plotlyOutput("dat_daily", height = 300)
-      # ),
+    #   uiOutput("newWindowContent", style = "display: none;"),
+    #   tags$script(HTML("
+    #   $(document).ready(function() {
+    #     if(window.location.hash != '') {
+    #       $('div:not(#newWindowContent)').hide();
+    #       $('#newWindowContent').show();
+    #     }
+    #   })
+    # "))
       # tabPanel("MS Summary", id='de_tab1', tags$head(includeScript("goman.js")),
       #          h3("MS Summary"),
       #          column(width = 6,
@@ -148,8 +132,17 @@ output$pageStub <- renderUI(fluidPage(
 #############################################################
 ######## From the contents under the original `Server` session
 
+
+
+output$newWindowContent <- renderUI({
+  "Welcome to your new window!"
+})
+
+
+
 ############ In `Detailed Evidence` tabset
 # Users cannot select both show_stackbar & show_trend (line graph) concurrently
+
 observe({
 
   if(is.null(input$show_trend1) | is.null(input$show_trend2) | is.null(input$show_stackbar) | is.null(input$show_stackbar2))  return(NULL)
@@ -2179,13 +2172,16 @@ observeEvent(input$click,{
 })
 
 observe({
+  
   print(input$click)
+  
   if(!is.null(input$click) & first_click==F){
     first_click <<- T
+    
     appendTab(inputId = "nav",
-      tabPanel("MS Summary", value='de_tab1', 
-               h3("MS Summary"),
+      tabPanel("Detailed MS", value='de_tab1', 
                column(width = 6,
+                      h3("MS Summary"),
                       selectInput(inputId="patient_num2",
                                   label="Select Patient Number: ",
                                   choices=choices,
@@ -2196,16 +2192,21 @@ observe({
                       checkboxInput("show_trend2","Show the trend in line graphs",FALSE),
                       checkboxInput("show_penc2","Show percentage",FALSE),
                       checkboxInput("show_rslider","Show range slider",FALSE)),  # Abs encounters -> percentage
-               column(width = 6,
+               column(width = 6,br(),
+                      # a("Open all the detailed tabs in a new page",href = "?plot=true", target = "_blank"),
+                      a("Open all the detailed tabs in a new page",href = "#NEW", target = "_blank"),
+                      br(), br(),
+                      # tags$style(".shiny-input-container {margin-bottom: 0px} .select { margin-top: 10px; margin-bottom: 0px }"),
                       selectInput(inputId="enco_type2",
                                   label="Select Encounter type(s): ",
                                   choices=unique(three_mss$Category), multiple = T,
                                   selected = unique(three_mss$Category))),
-               br(), br(), br(), br(), br(), br(), br(), br(), br(),
+               br(), br(), br(), br(), br(), br(), br(), br(), br(),br(),br(),
                uiOutput("history"),
                plotlyOutput("dat_all", height = 300),br(),
                plotlyOutput("dat_comp", height = 300)
-      ))
+      )) 
+    
     appendTab(inputId = "nav",
       tabPanel("Detailed MS Daily", value='de_tab2',
                h3("Detailed MS Daily"),
@@ -2223,15 +2224,27 @@ observe({
                h4("Encounters by Day"),
                plotlyOutput("all_six", height = 650),
                br(),
-               h4("Vitamin D Levels"),
+               h4("Vitamin D Values (in nmol/L)"),
                checkboxInput("show_trend","Show the trend in a line graph",FALSE),
-               plotlyOutput("vitd")) ) #appendTab
-    
+               plotlyOutput("vitd"))  
+      ) #appendTab
 
-    
   }
-  
+
+})   #observe({})
+
+observe({
+  query <- parseQueryString(session$clientData$url_search)
+  print(query)
+  if (is.null(query[['outer']])) {
+    show("window1")
+    show("window2")
+  }else{
+    show("plotWindow")
+  }
 })
+
+
 
 
 ### Enable pop-up window
